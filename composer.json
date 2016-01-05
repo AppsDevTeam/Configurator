@@ -1,0 +1,27 @@
+{
+	"name": "adt/configurator",
+	"type": "library",
+	"description": "Initial system DI container generator for ADT.",
+	"keywords": [],
+	"homepage": "http://appsdevteam.com",
+	"license": ["BSD-3-Clause", "GPL-2.0", "GPL-3.0"],
+	"authors": [
+		{
+			"name": "Apps Dev Team",
+			"homepage": "http://appsdevteam.com",
+			"email": "hello@appsdevteam.com"
+		}
+	],
+	"support": {
+		"email": "hello@appsdevteam.com",
+		"issues": "https://github.com/AppsDevTeam/Configurator/issues"
+	},
+	"require": {
+		"nette/nette": "~2.2"
+	},
+	"autoload": {
+		"psr-4": {
+			"ADT\\": "src/"
+		}
+	}
+}
