@@ -2,6 +2,14 @@
 
 Initial system DI container generator for ADT.
 
+Every developer has his own public and private key.
+Debug access is granted by providing correct private key in cookie and IP address.
+
+Environment is based on these possibilities:
+- Write `env:<environment>` as first parameter of CLI command.
+- Write `env:<http_host>` as first parameter of CLI command.
+- Do request to domain specified by `self::setDomains`.
+
 ## Installation
 
 The best way to install is using [Composer](http://getcomposer.org/):
@@ -36,4 +44,27 @@ $configurator
 	->setDebugMode();
 ```
 
- 
+And after
+
+```
+$configurator->addConfig(__DIR__ . '/config/config.neon');
+```
+
+add
+
+```
+$configurator
+	->setDomains([
+		'my.dev.domain.com' => 'dev',
+		'my.production.domain.com' => 'prod',
+	])
+	->setEnvironment()
+	->addEnvironmentConfig(__DIR__ . '/config');
+```
+
+Create these config files:
+- `/config/config.remote.dev.neon`
+- `/config/config.remote.prod.neon`
+- `/config/config.local.neon`
+
+Then you can go to URL `my.dev.domain.com` or run `php www/index.php env:dev ...`.

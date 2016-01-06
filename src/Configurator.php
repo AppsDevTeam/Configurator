@@ -19,6 +19,19 @@ class Configurator extends \Nette\Configurator
 	
 	
 	/**
+	 * Translation from domain to environment.
+	 * @var array
+	 */
+	protected $domains;
+	
+	public function setDomains($domains)
+	{
+		$this->domains = $domains;
+		return $this;
+	}
+	
+	
+	/**
 	 * Developers allowed debugging.
 	 * @var array
 	 */
@@ -52,6 +65,80 @@ class Configurator extends \Nette\Configurator
 		}
 		
 		return parent::setDebugMode($value);
+	}
+	
+	
+	/**
+	 * Sets the environment variable. If self::AUTO is passed, environment is
+	 * computed using domain list or argv. Possibilities:
+	 * - Write "env:<environment>" as first parameter of CLI command.
+	 * - Write "env:<http_host>" as first parameter of CLI command.
+	 * - Do request to domain specified by self::setDomains.
+	 * @param string|boolean $environment
+	 * @return self
+	 */
+	public function setEnvironment($environment = self::AUTO) {
+		
+		if ($environment === self::AUTO) {
+			
+			$httpHost = NULL;
+
+			if (
+				php_sapi_name() === 'cli'
+				&&
+				($argv = $_SERVER['argv'])
+				&&
+				isset($argv[1])
+				&&
+				substr($argv[1], 0, 4) === 'env:'
+			) {
+				unset($_SERVER['argv'][1]);
+
+				// env:<environment>
+				$this->parameters['environment'] = $httpHost = substr($argv[1], 4);
+			}
+
+			if (isset($_SERVER['HTTP_HOST'])) {
+				$httpHost = $_SERVER['HTTP_HOST'];
+			}
+
+			if (isset($this->domains[$httpHost])) {
+				// env:<http_host>
+				$this->parameters['environment'] = $this->domains[$httpHost];
+			}
+			
+		} else {
+			$this->parameters['environment'] = $environment;
+		}
+		
+		return $this;
+	}
+	
+	
+	/**
+	 * Adds first existing config file descending on priority:
+	 * - config.remote.<environment>.neon
+	 * - config.local.neon
+	 * @param string Path to folder with configuration files.
+	 * @return self
+	 */
+	public function addEnvironmentConfig($configFolder) {
+		
+		$configFiles = [
+			'config.remote.'. $this->parameters['environment'] .'.neon',
+			'config.local.neon',
+		];
+		
+		foreach ($configFiles as $configFile) {
+			$fullPath = "$configFolder/$configFile";
+			
+			if (! file_exists($fullPath)) continue;
+
+			$this->addConfig($fullPath);
+			break;
+		}
+		
+		return $this;
 	}
 	
 	
