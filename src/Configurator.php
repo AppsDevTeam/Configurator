@@ -134,6 +134,12 @@ class Configurator extends \Nette\Configurator
 		return $this;
 	}
 
+	/**
+	 * @return string|boolean
+	 */
+	public function getEnvironment() {
+		return $this->parameters['environment'];
+	}
 
 	/**
 	 *
