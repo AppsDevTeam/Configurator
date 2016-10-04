@@ -138,6 +138,12 @@ class Configurator extends \Nette\Configurator
 	 * @return string|boolean
 	 */
 	public function getEnvironment() {
+
+		// Environment is deprecated in Nette 2.4
+		if (! isset($this->parameters['environment'])) {
+			return $this->parameters['debugMode'] ? 'development' : 'production';
+		}
+
 		return $this->parameters['environment'];
 	}
 
@@ -178,7 +184,7 @@ class Configurator extends \Nette\Configurator
 	public function addEnvironmentConfig($configFolder) {
 
 		$configFiles = [
-			'config.remote.'. $this->parameters['environment'] .'.neon',
+			'config.remote.'. $this->getEnvironment() .'.neon',
 			'config.local.neon',
 		];
 
