@@ -262,7 +262,7 @@ class Configurator extends \Nette\Configurator
 
 		/**
 		 * https://forum.nette.org/cs/16290-php-notice-zachytavat-jako-exception#p115302
-		 * We would like to have a stack trace for a notice, but we don't want to stop the application run.
+		 * We would like to have a stack trace for a notice and warning, but we don't want to stop the application run.
 		 * This has to be set after `parent::enableDebugger', because different `error_handler' is set in `Tracy\Debugger::enable'.
 		 */
 		set_error_handler(function($severity, $message, $file, $line, $context) {
@@ -270,7 +270,7 @@ class Configurator extends \Nette\Configurator
 			if (
 				0 !== error_reporting()	// error was not suppressed with the @-operator
 				&&
-				($severity & (E_NOTICE)) === $severity
+				($severity & (E_NOTICE | E_WARNING)) === $severity
 			) {
 				\Tracy\Debugger::log(new \ErrorException($message, 0, $severity, $file, $line), \Tracy\Debugger::EXCEPTION);
 				return NULL;	// Do not run \Tracy\Debugger::errorHandler, because we already handled this notice as an exception. There can be NULL or FALSE. Both seems to act equally.
