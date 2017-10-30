@@ -227,8 +227,7 @@ class Configurator extends \Nette\Configurator
 	 */
 	protected function detectDebugModeByKey() {
 
-		if (! isset($_SERVER['REMOTE_ADDR'])) {
-			// You are always in debug mode in cli.
+		if (getenv('NETTE_DEBUG')) {
 			// You can overwrite this in your bootstrap.php by calling `->setDebugMode(php_sapi_name() == 'cli' ? FALSE : NULL)`.
 			return TRUE;
 		}

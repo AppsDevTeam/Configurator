@@ -68,3 +68,9 @@ Create these config files:
 - `/config/config.local.neon`
 
 Then you can go to URL `my.dev.domain.com` or run `php www/index.php env:dev ...`.
+
+You can enable debug mode in cli using `NETTE_DEBUG` variable. Set it for example in your `~/.bash_profile`:
+
+```bash
+export NETTE_DEBUG=1
+```
