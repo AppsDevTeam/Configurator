@@ -121,10 +121,12 @@ class Configurator extends \Nette\Configurator
 			if ($this->getHttpHost()) {
 				$httpHost = $this->getHttpHost();
 			}
+			
+			$httpHostname = explode(":", $httpHost)[0];
 
-			if (isset($this->domains[$httpHost])) {
+			if (isset($this->domains[$httpHostname])) {
 				// env:<http_host>
-				$this->parameters['environment'] = $this->domains[$httpHost];
+				$this->parameters['environment'] = $this->domains[$httpHostname];
 			}
 
 		} else {
