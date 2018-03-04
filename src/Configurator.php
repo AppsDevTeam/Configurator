@@ -128,6 +128,19 @@ class Configurator extends \Nette\Configurator
 				// env:<http_host>
 				$this->parameters['environment'] = $this->domains[$httpHostname];
 			}
+			
+			// if there is a subdomain in the hostname
+			if (($domainParts = explode('.', $httpHostname)) > 2) {
+
+				// replace a subdomain for '*'
+				$domainParts[0] = '*';
+				$httpHostname = implode('.', $domainParts);
+
+				if (isset($this->domains[$httpHostname])) {
+					// env:<http_host>
+					$this->parameters['environment'] = $this->domains[$httpHostname];
+				}
+			}
 
 		} else {
 			$this->parameters['environment'] = $environment;
