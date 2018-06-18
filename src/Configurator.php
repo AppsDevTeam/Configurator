@@ -78,6 +78,27 @@ class Configurator extends \Nette\Configurator
 		return $this;
 	}
 
+	/**
+	 * Adds first existing config file descending on priority:
+	 * - config.remote.<environment>.neon
+	 * - config.local.neon
+	 * @var array
+	 */
+	protected $configFiles = [
+		'config.remote.%environment%.neon',
+		'config.local.neon',
+	];
+
+	/**
+	 * @param array $configFiles
+	 * @return $this
+	 */
+	public function setConfigFiles($configFiles)
+	{
+		$this->configFiles = $configFiles;
+		return $this;
+	}
+
 
 	/**
 	 * Set parameter %debugMode%.
@@ -190,20 +211,13 @@ class Configurator extends \Nette\Configurator
 
 
 	/**
-	 * Adds first existing config file descending on priority:
-	 * - config.remote.<environment>.neon
-	 * - config.local.neon
 	 * @param string Path to folder with configuration files.
 	 * @return self
 	 */
 	public function addEnvironmentConfig($configFolder) {
 
-		$configFiles = [
-			'config.remote.'. $this->getEnvironment() .'.neon',
-			'config.local.neon',
-		];
-
-		foreach ($configFiles as $configFile) {
+		foreach ($this->configFiles as $configFile) {
+			$configFile = str_replace('%environment%', $this->getEnvironment(), $configFile);
 			$fullPath = "$configFolder/$configFile";
 
 			if (! file_exists($fullPath)) continue;
