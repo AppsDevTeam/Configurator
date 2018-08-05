@@ -146,20 +146,23 @@ class Configurator extends \Nette\Configurator
 			$httpHostname = explode(":", $httpHost)[0];
 
 			if (isset($this->domains[$httpHostname])) {
+				// Key in $this->domains can be http hostname.
 				// env:<http_host>
 				$this->parameters['environment'] = $this->domains[$httpHostname];
-			}
-			
-			// if there is a subdomain in the hostname
-			if (($domainParts = explode('.', $httpHostname)) > 2) {
 
-				// replace a subdomain for '*'
-				$domainParts[0] = '*';
-				$httpHostname = implode('.', $domainParts);
+			} else {
+				// Key in $this->domains can be regex.
+				// env:<http_host>
 
-				if (isset($this->domains[$httpHostname])) {
-					// env:<http_host>
-					$this->parameters['environment'] = $this->domains[$httpHostname];
+				$regexDomains = array_filter(array_keys($this->domains), function ($domain) {
+					return substr($domain, 0, 1) === '^';   // Regex starts with '^'.
+				});
+
+				foreach ($regexDomains as $regexDomain) {
+					if (preg_match("\x01$regexDomain\x01", $httpHostname)) {
+						$this->parameters['environment'] = $this->domains[$regexDomain];
+						break;
+					}
 				}
 			}
 

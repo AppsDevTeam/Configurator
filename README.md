@@ -57,6 +57,7 @@ $configurator
 	->setDomains([
 		'my.dev.domain.com' => 'dev',
 		'my.production.domain.com' => 'prod',
+		'^.*\.all\.other\.subdomains\.com$' => 'other', // Regex must start with '^'
 	])
 	->setEnvironment()
 	->addEnvironmentConfig(__DIR__ . '/config');
