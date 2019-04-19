@@ -22,7 +22,7 @@ class Configurator extends \Nette\Configurator
 	 * Translation from domain to environment.
 	 * @var array
 	 */
-	protected $domains;
+	protected $domains = [];
 
 	public function setDomains($domains)
 	{
