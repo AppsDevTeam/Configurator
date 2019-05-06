@@ -294,9 +294,14 @@ class Configurator extends \Nette\Configurator
 	 * @param  string        administrator email
 	 * @return void
 	 */
-	public function enableDebugger($logDirectory = NULL, $email = NULL) {
+	public function enableDebugger(?string $logDirectory = NULL, ?string $email = NULL): void {
 		\Tracy\Debugger::$logSeverity = E_ALL;
 		parent::enableDebugger($logDirectory, $email);
+	}
+
+	public function enableTracy(string $logDirectory = null, string $email = null): void {
+		\Tracy\Debugger::$logSeverity = E_ALL;
+		parent::enableTracy($logDirectory, $email);
 	}
 
 }

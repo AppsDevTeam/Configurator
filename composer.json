@@ -17,9 +17,9 @@
 		"issues": "https://github.com/AppsDevTeam/Configurator/issues"
 	},
 	"require": {
-		"nette/bootstrap": "^2.2",
-		"nette/security": "^2.2",
-		"tracy/tracy": "^2.3"
+		"nette/bootstrap": "^3.0",
+		"nette/security": "^3.0",
+		"tracy/tracy": "^2.6"
 	},
 	"autoload": {
 		"psr-4": {
