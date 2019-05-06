@@ -116,7 +116,7 @@ class Configurator extends \Nette\Configurator
 
 
 	/**
-	 * Sets the environment variable. If self::AUTO is passed, environment is
+	 * Sets the environment variable. If NULL is passed, environment is
 	 * computed using domain list or argv. Possibilities:
 	 * - Write "env:<environment>" as first parameter of CLI command.
 	 * - Write "env:<http_host>" as first parameter of CLI command.
@@ -124,9 +124,9 @@ class Configurator extends \Nette\Configurator
 	 * @param string|boolean $environment
 	 * @return self
 	 */
-	public function setEnvironment($environment = self::AUTO) {
+	public function setEnvironment($environment = NULL) {
 
-		if ($environment === self::AUTO) {
+		if ($environment === NULL) {
 
 			$httpHost = NULL;
 
@@ -142,7 +142,7 @@ class Configurator extends \Nette\Configurator
 			if ($this->getHttpHost()) {
 				$httpHost = $this->getHttpHost();
 			}
-			
+
 			$httpHostname = explode(":", $httpHost)[0];
 
 			if (isset($this->domains[$httpHostname])) {
