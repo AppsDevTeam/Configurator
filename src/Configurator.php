@@ -117,16 +117,21 @@ class Configurator extends \Nette\Configurator
 
 	/**
 	 * Sets the environment variable. If NULL is passed, environment is
-	 * computed using domain list or argv. Possibilities:
+	 * computed using domain list, argv and debugMode. Possibilities:
 	 * - Write "env:<environment>" as first parameter of CLI command.
 	 * - Write "env:<http_host>" as first parameter of CLI command.
 	 * - Do request to domain specified by self::setDomains.
+	 * - If debugMode is true, set 'development' else 'production'.
 	 * @param string|boolean $environment
 	 * @return self
 	 */
 	public function setEnvironment($environment = NULL) {
 
 		if ($environment === NULL) {
+
+			if (! isset($this->parameters['environment'])) {
+				$this->parameters['environment'] = $this->parameters['debugMode'] ? 'development' : 'production';
+			}
 
 			$httpHost = NULL;
 
