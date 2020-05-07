@@ -118,8 +118,8 @@ class Configurator extends \Nette\Configurator
 	/**
 	 * Sets the environment variable. If self::AUTO is passed, environment is
 	 * computed using domain list or argv. Possibilities:
-	 * - Write "env:<environment>" as first parameter of CLI command.
-	 * - Write "env:<http_host>" as first parameter of CLI command.
+	 * - Write "--env <environment>" as parameter of CLI command.
+	 * - Write "--env <http_host>" as parameter of CLI command.
 	 * - Do request to domain specified by self::setDomains.
 	 * @param string|boolean $environment
 	 * @return self
@@ -133,9 +133,9 @@ class Configurator extends \Nette\Configurator
 			if (
 				php_sapi_name() === 'cli'
 				&&
-				($argument = static::popServerArgv(1, 'env')) !== NULL
+				($argument = static::getServerArgv('env')) !== NULL
 			) {
-				// env:<environment>
+				// --env <environment>
 				$this->parameters['environment'] = $httpHost = $argument;
 			}
 
@@ -147,12 +147,12 @@ class Configurator extends \Nette\Configurator
 
 			if (isset($this->domains[$httpHostname])) {
 				// Key in $this->domains can be http hostname.
-				// env:<http_host>
+				// --env <http_host>
 				$this->parameters['environment'] = $this->domains[$httpHostname];
 
 			} else {
 				// Key in $this->domains can be regex.
-				// env:<http_host>
+				// --env <http_host>
 
 				$regexDomains = array_filter(array_keys($this->domains), function ($domain) {
 					return substr($domain, 0, 1) === '^';   // Regex starts with '^'.
@@ -186,30 +186,28 @@ class Configurator extends \Nette\Configurator
 		return $this->parameters['environment'];
 	}
 
+
 	/**
-	 *
-	 * @param int $index
 	 * @param string $name
+	 * @return string|NULL
 	 */
-	public static function popServerArgv($index, $name) {
+	public static function getServerArgv($name) {
 
-		if (!isset($_SERVER['argv'])) return NULL;
+		$prevArgv = NULL;
+		$result = NULL;
 
-		$argv = $_SERVER['argv'];
+		foreach ($_SERVER['argv'] as $argv) {
+			if ($prevArgv === "--$name") { // --env <value>
+				$result = $argv;
+				$prevArgv = null;
+			} elseif (strpos($argv, "--$name=") === 0) { // --env=<value>
+				list(, $result) = explode('=', $argv);
+			} else {
+				$prevArgv = $argv;
+			}
+		}
 
-		if (!isset($argv[$index])) return NULL;
-
-		$argument = $argv[$index];
-		$nameLen = strlen($name) + 1;
-		$name .= ':';
-
-		if (strncmp($argument, $name, $nameLen) !== 0) return NULL;
-
-		unset($_SERVER['argv'][$index]);
-		$_SERVER['argv'] = array_values($_SERVER['argv']);
-		$_SERVER['argc']--;
-
-		return substr($argument, $nameLen);
+		return $result;
 	}
 
 

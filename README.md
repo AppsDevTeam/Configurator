@@ -6,8 +6,8 @@ Every developer has his own public and private key.
 Debug access is granted by providing correct private key in cookie and IP address.
 
 Environment is based on these possibilities:
-- Write `env:<environment>` as first parameter of CLI command.
-- Write `env:<http_host>` as first parameter of CLI command.
+- Write `--env <environment>`, or `--env=<environment>` as parameter of CLI command.
+- Write `--env <http_host>`, or `--env=<http_host>` as parameter of CLI command.
 - Do request to domain specified by `self::setDomains`.
 
 ## Installation
@@ -68,7 +68,7 @@ Create these config files:
 - `/config/config.remote.prod.neon`
 - `/config/config.local.neon`
 
-Then you can go to URL `my.dev.domain.com` or run `php www/index.php env:dev ...`.
+Then you can go to URL `my.dev.domain.com` or run `php www/index.php --env dev ...`.
 
 You can enable debug mode in cli using `NETTE_DEBUG` variable. Set it for example in your `~/.bash_profile`:
 
