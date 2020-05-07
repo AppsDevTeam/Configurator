@@ -116,17 +116,22 @@ class Configurator extends \Nette\Configurator
 
 
 	/**
-	 * Sets the environment variable. If self::AUTO is passed, environment is
-	 * computed using domain list or argv. Possibilities:
+	 * Sets the environment variable. If NULL is passed, environment is
+	 * computed using domain list, argv and debugMode. Possibilities:
 	 * - Write "env:<environment>" as first parameter of CLI command.
 	 * - Write "env:<http_host>" as first parameter of CLI command.
 	 * - Do request to domain specified by self::setDomains.
+	 * - If debugMode is true, set 'development' else 'production'.
 	 * @param string|boolean $environment
 	 * @return self
 	 */
-	public function setEnvironment($environment = self::AUTO) {
+	public function setEnvironment($environment = NULL) {
 
-		if ($environment === self::AUTO) {
+		if ($environment === NULL) {
+
+			if (! isset($this->parameters['environment'])) {
+				$this->parameters['environment'] = $this->parameters['debugMode'] ? 'development' : 'production';
+			}
 
 			$httpHost = NULL;
 
@@ -142,7 +147,7 @@ class Configurator extends \Nette\Configurator
 			if ($this->getHttpHost()) {
 				$httpHost = $this->getHttpHost();
 			}
-			
+
 			$httpHostname = explode(":", $httpHost)[0];
 
 			if (isset($this->domains[$httpHostname])) {
@@ -294,9 +299,14 @@ class Configurator extends \Nette\Configurator
 	 * @param  string        administrator email
 	 * @return void
 	 */
-	public function enableDebugger($logDirectory = NULL, $email = NULL) {
+	public function enableDebugger(?string $logDirectory = NULL, ?string $email = NULL): void {
 		\Tracy\Debugger::$logSeverity = E_ALL;
 		parent::enableDebugger($logDirectory, $email);
+	}
+
+	public function enableTracy(string $logDirectory = null, string $email = null): void {
+		\Tracy\Debugger::$logSeverity = E_ALL;
+		parent::enableTracy($logDirectory, $email);
 	}
 
 }
