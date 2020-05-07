@@ -80,12 +80,12 @@ class Configurator extends \Nette\Configurator
 
 	/**
 	 * Adds first existing config file descending on priority:
-	 * - config.remote.<environment>.neon
+	 * - config.<environment>.neon
 	 * - config.local.neon
 	 * @var array
 	 */
 	protected $configFiles = [
-		'config.remote.%environment%.neon',
+		'config.%environment%.neon',
 		'config.local.neon',
 	];
 

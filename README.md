@@ -64,8 +64,8 @@ $configurator
 ```
 
 Create these config files:
-- `/config/config.remote.dev.neon`
-- `/config/config.remote.prod.neon`
+- `/config/config.dev.neon`
+- `/config/config.prod.neon`
 - `/config/config.local.neon`
 
 Then you can go to URL `my.dev.domain.com` or run `php www/index.php --env dev ...`.
