@@ -18,7 +18,6 @@
 	},
 	"require": {
 		"nette/bootstrap": "^3.0",
-		"nette/security": "^3.0",
 		"tracy/tracy": "^2.6"
 	},
 	"autoload": {

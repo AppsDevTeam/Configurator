@@ -245,7 +245,7 @@ class Configurator extends \Nette\Configurator
 	{
 		$password = \Nette\Utils\Random::generate(32, '!-~');	// This is sufficient for strong security.
 		$secret = $slug .'@'. $password;
-		$public = $slug .'@'. \Nette\Security\Passwords::hash($password);
+		$public = $slug .'@'. password_hash($password, PASSWORD_DEFAULT);
 
 		echo "<h1>Public key</h1>";
 		\Tracy\Debugger::dump($public);
@@ -284,7 +284,7 @@ class Configurator extends \Nette\Configurator
 			return FALSE;
 		}
 
-		return \Nette\Security\Passwords::verify($password, $developer['hash']);
+		return password_verify($password, $developer['hash']);
 	}
 
 	protected static function explodeKeySlug($key)
