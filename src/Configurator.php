@@ -79,23 +79,19 @@ class Configurator extends \Nette\Configurator
 	}
 
 	/**
-	 * Adds first existing config file descending on priority:
-	 * - config.<environment>.neon
-	 * - config.local.neon
-	 * @var array
+	 * Config file name mask.
+	 * @var string
 	 */
-	protected $configFiles = [
-		'config.%environment%.neon',
-		'config.local.neon',
-	];
+	protected $configFile = 'config.%environment%.neon';
 
 	/**
-	 * @param array $configFiles
+	 * Sets config file name mask.
+	 * @param string $configFile
 	 * @return $this
 	 */
-	public function setConfigFiles($configFiles)
+	public function setConfigFile($configFile)
 	{
-		$this->configFiles = $configFiles;
+		$this->configFile = $configFile;
 		return $this;
 	}
 
@@ -222,15 +218,14 @@ class Configurator extends \Nette\Configurator
 	 */
 	public function addEnvironmentConfig($configFolder) {
 
-		foreach ($this->configFiles as $configFile) {
-			$configFile = str_replace('%environment%', $this->getEnvironment(), $configFile);
-			$fullPath = "$configFolder/$configFile";
+		$configFile = str_replace('%environment%', $this->getEnvironment(), $this->configFile);
+		$fullPath = "$configFolder/$configFile";
 
-			if (! file_exists($fullPath)) continue;
-
-			$this->addConfig($fullPath);
-			break;
+		if (! file_exists($fullPath)) {
+			throw new \Nette\FileNotFoundException("Config file '$fullPath' not found!");
 		}
+
+		$this->addConfig($fullPath);
 
 		return $this;
 	}
