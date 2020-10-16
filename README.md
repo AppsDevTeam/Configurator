@@ -55,6 +55,7 @@ add
 ```
 $configurator
 	->setDomains([
+		'my.local.domain.loc' => 'local',
 		'my.dev.domain.com' => 'dev',
 		'my.production.domain.com' => 'prod',
 		'^.*\.all\.other\.subdomains\.com$' => 'other', // Regex must start with '^'
