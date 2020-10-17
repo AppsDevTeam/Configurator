@@ -173,9 +173,8 @@ class Configurator extends \Nette\Configurator
 	 */
 	public function getEnvironment() {
 
-		// Environment is deprecated in Nette 2.4
 		if (! isset($this->parameters['environment'])) {
-			return $this->parameters['debugMode'] ? 'development' : 'production';
+			throw new \Exception('Environment is not set.');
 		}
 
 		return $this->parameters['environment'];
