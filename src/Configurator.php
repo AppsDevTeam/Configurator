@@ -117,18 +117,12 @@ class Configurator extends \Nette\Configurator
 	 * - Write "--env <environment>" as parameter of CLI command.
 	 * - Write "--env <http_host>" as parameter of CLI command.
 	 * - Do request to domain specified by self::setDomains.
-	 * - If debugMode is true, set 'development' else 'production'.
 	 * @param string|boolean $environment
 	 * @return self
 	 */
 	public function setEnvironment($environment = NULL) {
 
 		if ($environment === NULL) {
-
-			if (! isset($this->parameters['environment'])) {
-				$this->parameters['environment'] = $this->parameters['debugMode'] ? 'development' : 'production';
-			}
-
 			$httpHost = NULL;
 
 			if (
@@ -179,9 +173,8 @@ class Configurator extends \Nette\Configurator
 	 */
 	public function getEnvironment() {
 
-		// Environment is deprecated in Nette 2.4
 		if (! isset($this->parameters['environment'])) {
-			return $this->parameters['debugMode'] ? 'development' : 'production';
+			throw new \Exception('Environment is not set.');
 		}
 
 		return $this->parameters['environment'];
