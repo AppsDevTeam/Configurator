@@ -130,25 +130,22 @@ class Configurator extends \Nette\Configurator
 					throw new \Exception('Variable \'$_SERVER[REQUEST_URI]\' is not set.');
 				}
 
-				$httpHost = explode(":", $_SERVER['HTTP_HOST'])[0];
-				$requestUri = $_SERVER['REQUEST_URI'];
+				// Exclude server port and parameters.
+				$requestUrl = explode(':', $_SERVER['HTTP_HOST'])[0] . explode('?', $_SERVER['REQUEST_URI'])[0];
 
-				foreach ([$httpHost . $requestUri, $httpHost] as $url) {
-					if (isset($this->urls[$url])) {
-						$this->parameters['environment'] = $this->urls[$url];
-						break;
+				foreach ($this->urls as $url => $env) {
+					if (strpos($url, '^') === 0) {
+						// Key in $this->urls can be regex (starts with '^').
+						if (preg_match("\x01$url\x01", $requestUrl)) {
+							$this->parameters['environment'] = $env;
+							break;
+						}
 					} else {
-						// Key in $this->urls can be regex.
-
-						$regexUrls = array_filter(array_keys($this->urls), function ($s) {
-							return substr($s, 0, 1) === '^'; // Regex starts with '^'.
-						});
-
-						foreach ($regexUrls as $regexUrl) {
-							if (preg_match("\x01$regexUrl\x01", $url)) {
-								$this->parameters['environment'] = $this->urls[$regexUrl];
-								break 2;
-							}
+						// Or just a regular string.
+						if (strpos($requestUrl . '/',  $url . '/') === 0) {
+							// $requestUrl starts with $url and continues with a slash or ends.
+							$this->parameters['environment'] = $env;
+							break;
 						}
 					}
 				}
