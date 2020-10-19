@@ -19,41 +19,28 @@ class Configurator extends \Nette\Configurator
 
 
 	/**
-	 * Translation from domain to environment.
-	 * @var array
+	 * Translation from URL to environment.
+	 * @var string[]
 	 */
-	protected $domains = [];
-
-	public function setDomains($domains)
-	{
-		$this->domains = $domains;
-		return $this;
-	}
-
+	protected $urls = [];
 
 	/**
-	 * Http host, so you can set your own. Handy when you want to handle subdomains.
-	 * @var string
+	 * @param string[] $urls
+	 * @return $this
 	 */
-	protected $httpHost;
-
-	public function setHttpHost($httpHost)
+	public function setUrls($urls)
 	{
-		$this->httpHost = $httpHost;
+		$this->urls = $urls;
 		return $this;
 	}
 
-	public function getHttpHost()
+	/**
+	 * @deprecated Use method setUrls() instead.
+	 * @param string[] $domains
+	 */
+	public function setDomains($domains)
 	{
-		if ($this->httpHost !== NULL) {
-			return $this->httpHost;
-		}
-
-		if (isset($_SERVER['HTTP_HOST'])) {
-			return $_SERVER['HTTP_HOST'];
-		}
-
-		return NULL;
+		$this->setUrls($domains);
 	}
 
 
@@ -113,54 +100,59 @@ class Configurator extends \Nette\Configurator
 
 	/**
 	 * Sets the environment variable. If NULL is passed, environment is
-	 * computed using domain list, argv and debugMode. Possibilities:
+	 * computed using URL list and argv. Possibilities:
 	 * - Write "--env <environment>" as parameter of CLI command.
-	 * - Write "--env <http_host>" as parameter of CLI command.
-	 * - Do request to domain specified by self::setDomains.
-	 * @param string|boolean $environment
+	 * - Do request to URL specified by self::setUrls.
+	 * @param string|null $environment
 	 * @return self
 	 */
-	public function setEnvironment($environment = NULL) {
+	public function setEnvironment($environment = null) {
 
-		if ($environment === NULL) {
-			$httpHost = NULL;
+		if ($environment === null) {
 
-			if (
-				php_sapi_name() === 'cli'
-				&&
-				($argument = static::getServerArgv('env')) !== NULL
-			) {
+			if (php_sapi_name() === 'cli') {
+				// CLI
+
 				// --env <environment>
-				$this->parameters['environment'] = $httpHost = $argument;
-			}
+				if (($argument = static::getServerArgv('env')) === null) {
+					throw new \Exception("Parameter '--env' is required.");
+				}
 
-			if ($this->getHttpHost()) {
-				$httpHost = $this->getHttpHost();
-			}
-
-			$httpHostname = explode(":", $httpHost)[0];
-
-			if (isset($this->domains[$httpHostname])) {
-				// Key in $this->domains can be http hostname.
-				// --env <http_host>
-				$this->parameters['environment'] = $this->domains[$httpHostname];
-
+				$this->parameters['environment'] = $argument;
 			} else {
-				// Key in $this->domains can be regex.
-				// --env <http_host>
+				// HTTP request
 
-				$regexDomains = array_filter(array_keys($this->domains), function ($domain) {
-					return substr($domain, 0, 1) === '^';   // Regex starts with '^'.
-				});
+				if (! isset($_SERVER['HTTP_HOST'])) {
+					throw new \Exception('Variable \'$_SERVER[HTTP_HOST]\' is not set.');
+				}
 
-				foreach ($regexDomains as $regexDomain) {
-					if (preg_match("\x01$regexDomain\x01", $httpHostname)) {
-						$this->parameters['environment'] = $this->domains[$regexDomain];
+				if (! isset($_SERVER['REQUEST_URI'])) {
+					throw new \Exception('Variable \'$_SERVER[REQUEST_URI]\' is not set.');
+				}
+
+				$httpHost = explode(":", $_SERVER['HTTP_HOST'])[0];
+				$requestUri = $_SERVER['REQUEST_URI'];
+
+				foreach ([$httpHost . $requestUri, $httpHost] as $url) {
+					if (isset($this->urls[$url])) {
+						$this->parameters['environment'] = $this->urls[$url];
 						break;
+					} else {
+						// Key in $this->urls can be regex.
+
+						$regexUrls = array_filter(array_keys($this->urls), function ($s) {
+							return substr($s, 0, 1) === '^'; // Regex starts with '^'.
+						});
+
+						foreach ($regexUrls as $regexUrl) {
+							if (preg_match("\x01$regexUrl\x01", $url)) {
+								$this->parameters['environment'] = $this->urls[$regexUrl];
+								break 2;
+							}
+						}
 					}
 				}
 			}
-
 		} else {
 			$this->parameters['environment'] = $environment;
 		}
