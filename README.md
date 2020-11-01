@@ -7,8 +7,7 @@ Debug access is granted by providing correct private key in cookie and IP addres
 
 Environment is based on these possibilities:
 - Write `--env <environment>`, or `--env=<environment>` as parameter of CLI command.
-- Write `--env <http_host>`, or `--env=<http_host>` as parameter of CLI command.
-- Do request to domain specified by `self::setDomains`.
+- Do request to URL specified by `self::setUrls`.
 
 ## Installation
 
@@ -54,7 +53,7 @@ add
 
 ```
 $configurator
-	->setDomains([
+	->setUrls([
 		'my.local.domain.loc' => 'local',
 		'my.dev.domain.com' => 'dev',
 		'my.production.domain.com' => 'prod',
