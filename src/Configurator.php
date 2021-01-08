@@ -118,7 +118,7 @@ class Configurator extends \Nette\Configurator
 					throw new \Exception("Parameter '--env' is required.");
 				}
 
-				$this->parameters['environment'] = $argument;
+				$this->staticParameters['environment'] = $argument;
 			} else {
 				// HTTP request
 
@@ -137,21 +137,21 @@ class Configurator extends \Nette\Configurator
 					if (strpos($url, '^') === 0) {
 						// Key in $this->urls can be regex (starts with '^').
 						if (preg_match("\x01$url\x01", $requestUrl)) {
-							$this->parameters['environment'] = $env;
+							$this->staticParameters['environment'] = $env;
 							break;
 						}
 					} else {
 						// Or just a regular string.
 						if (strpos($requestUrl . '/',  $url . '/') === 0) {
 							// $requestUrl starts with $url and continues with a slash or ends.
-							$this->parameters['environment'] = $env;
+							$this->staticParameters['environment'] = $env;
 							break;
 						}
 					}
 				}
 			}
 		} else {
-			$this->parameters['environment'] = $environment;
+			$this->staticParameters['environment'] = $environment;
 		}
 
 		return $this;
@@ -162,11 +162,11 @@ class Configurator extends \Nette\Configurator
 	 */
 	public function getEnvironment() {
 
-		if (! isset($this->parameters['environment'])) {
+		if (! isset($this->staticParameters['environment'])) {
 			throw new \Exception('Environment is not set.');
 		}
 
-		return $this->parameters['environment'];
+		return $this->staticParameters['environment'];
 	}
 
 
