@@ -210,7 +210,7 @@ class Configurator extends \Nette\Configurator
 	
 	public function addConfig($config)
 	{
-		return parent::addConfig($this->configPath . '/' . $config);
+		return parent::addConfig($this->configPath ? $this->configPath . '/' . $config : $config);
 	}
 
 
