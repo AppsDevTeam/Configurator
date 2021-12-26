@@ -194,14 +194,9 @@ class Configurator extends \Nette\Configurator
 	}
 
 
-	/**
-	 * @param string Path to folder with configuration files.
-	 * @return self
-	 */
-	public function addEnvironmentConfig($configFolder) {
-
-		$configFile = str_replace('%environment%', $this->getEnvironment(), $this->configFile);
-		$fullPath = "$configFolder/$configFile";
+	public function addEnvironmentConfig(): self
+	{
+		$fullPath = ($this->configPath ? $this->configPath . '/' : '') . str_replace('%environment%', $this->getEnvironment(), $this->configFile);
 
 		if (! file_exists($fullPath)) {
 			throw new \Nette\FileNotFoundException("Config file '$fullPath' not found!");
@@ -210,6 +205,12 @@ class Configurator extends \Nette\Configurator
 		$this->addConfig($fullPath);
 
 		return $this;
+	}
+	
+	
+	public function addConfig($config)
+	{
+		return parent::addConfig($this->configPath . '/' . $config);
 	}
 
 
@@ -282,6 +283,21 @@ class Configurator extends \Nette\Configurator
 	public function enableTracy(string $logDirectory = null, string $email = null): void {
 		\Tracy\Debugger::$logSeverity = E_ALL;
 		parent::enableTracy($logDirectory, $email);
+	}
+	
+
+	public string $configPath = '';
+	
+	public function setConfigPath(string $configPath): self
+	{
+		$this->configPath = $configPath;
+		
+		return $this;
+	}
+	
+	public function getConfigPath(): string
+	{
+		return $this->configPath;
 	}
 
 }
