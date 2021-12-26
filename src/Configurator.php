@@ -122,33 +122,7 @@ class Configurator extends \Nette\Configurator
 			} else {
 				// HTTP request
 
-				if (! isset($_SERVER['HTTP_HOST'])) {
-					throw new \Exception('Variable \'$_SERVER[HTTP_HOST]\' is not set.');
-				}
-
-				if (! isset($_SERVER['REQUEST_URI'])) {
-					throw new \Exception('Variable \'$_SERVER[REQUEST_URI]\' is not set.');
-				}
-
-				// Exclude server port and parameters.
-				$requestUrl = explode(':', $_SERVER['HTTP_HOST'])[0] . explode('?', $_SERVER['REQUEST_URI'])[0];
-
-				foreach ($this->urls as $url => $env) {
-					if (strpos($url, '^') === 0) {
-						// Key in $this->urls can be regex (starts with '^').
-						if (preg_match("\x01$url\x01", $requestUrl)) {
-							$this->staticParameters['environment'] = $env;
-							break;
-						}
-					} else {
-						// Or just a regular string.
-						if (strpos($requestUrl . '/',  $url . '/') === 0) {
-							// $requestUrl starts with $url and continues with a slash or ends.
-							$this->staticParameters['environment'] = $env;
-							break;
-						}
-					}
-				}
+				$this->staticParameters['environment'] = static::getConfigByUrl($this->urls);
 			}
 		} else {
 			$this->staticParameters['environment'] = $environment;
@@ -157,13 +131,11 @@ class Configurator extends \Nette\Configurator
 		return $this;
 	}
 
-	/**
-	 * @return string|boolean
-	 */
-	public function getEnvironment() {
 
+	public function getEnvironment(): ?string
+	{
 		if (! isset($this->staticParameters['environment'])) {
-			throw new \Exception('Environment is not set.');
+			return null;
 		}
 
 		return $this->staticParameters['environment'];
@@ -194,15 +166,19 @@ class Configurator extends \Nette\Configurator
 	}
 
 
-	public function addEnvironmentConfig(): self
+	public function addEnvironmentConfig(string $configPath = null): self
 	{
-		$fullPath = ($this->configPath ? $this->configPath . '/' : '') . str_replace('%environment%', $this->getEnvironment(), $this->configFile);
+		if (! $this->getEnvironment()) {
+			throw new \Exception('Environment is not set.');
+		}
+
+		$fullPath = ($configPath ?: $this->configPath) . '/' . str_replace('%environment%', $this->getEnvironment(), $this->configFile);
 
 		if (! file_exists($fullPath)) {
 			throw new \Nette\FileNotFoundException("Config file '$fullPath' not found!");
 		}
 
-		$this->addConfig($fullPath);
+		parent::addConfig($fullPath);
 
 		return $this;
 	}
@@ -300,4 +276,32 @@ class Configurator extends \Nette\Configurator
 		return $this->configPath;
 	}
 
+	public static function getConfigByUrl($urls)
+	{
+		if (! isset($_SERVER['HTTP_HOST'])) {
+			throw new \Exception('Variable \'$_SERVER[HTTP_HOST]\' is not set.');
+		}
+
+		if (! isset($_SERVER['REQUEST_URI'])) {
+			throw new \Exception('Variable \'$_SERVER[REQUEST_URI]\' is not set.');
+		}
+
+		// Exclude server port and parameters.
+		$requestUrl = explode(':', $_SERVER['HTTP_HOST'])[0] . explode('?', $_SERVER['REQUEST_URI'])[0];
+
+		foreach ($urls as $url => $env) {
+			if (strpos($url, '^') === 0) {
+				// Key in $this->urls can be regex (starts with '^').
+				if (preg_match("\x01$url\x01", $requestUrl)) {
+					return $env;
+				}
+			} else {
+				// Or just a regular string.
+				if (strpos($requestUrl . '/',  $url . '/') === 0) {
+					// $requestUrl starts with $url and continues with a slash or ends.
+					return $env;
+				}
+			}
+		}
+	}
 }
