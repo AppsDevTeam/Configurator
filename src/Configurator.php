@@ -214,11 +214,14 @@ class Configurator extends \Nette\Configurator
 	 * Detects debug mode by public and private keys stored in cookie.
 	 * @return bool
 	 */
-	protected function detectDebugModeByKey() {
+	protected function detectDebugModeByKey()
+	{
+		if (php_sapi_name() === 'cli') {
+			return getenv('NETTE_DEBUG');
+		}
 
-		if (getenv('NETTE_DEBUG')) {
-			// You can overwrite this in your bootstrap.php by calling `->setDebugMode(php_sapi_name() == 'cli' ? FALSE : NULL)`.
-			return TRUE;
+		if (! $this->developers) {
+			return getenv('STAGE') === 'local';
 		}
 
 		if (!isset($_COOKIE[self::COOKIE_SECRET]) || !is_string($_COOKIE[self::COOKIE_SECRET])) {
