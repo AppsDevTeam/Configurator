@@ -1,14 +1,13 @@
 {
 	"name": "adt/configurator",
 	"type": "library",
-	"description": "Initial system DI container generator for ADT.",
-	"keywords": [],
-	"homepage": "http://appsdevteam.com",
-	"license": ["BSD-3-Clause", "GPL-2.0", "GPL-3.0"],
+	"description": "Extended nette/configurator",
+	"homepage": "https://www.appsdevteam.com",
+	"license": ["MIT"],
 	"authors": [
 		{
 			"name": "Apps Dev Team",
-			"homepage": "http://appsdevteam.com",
+			"homepage": "https://www.appsdevteam.com",
 			"email": "hello@appsdevteam.com"
 		}
 	],
@@ -18,7 +17,8 @@
 	},
 	"require": {
 		"nette/bootstrap": "^3.0",
-		"tracy/tracy": "^2.6"
+		"tracy/tracy": "^2.6",
+		"vlucas/phpdotenv": "^5.0"
 	},
 	"autoload": {
 		"psr-4": {
