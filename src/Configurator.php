@@ -2,191 +2,86 @@
 
 namespace ADT;
 
-class Configurator extends \Nette\Configurator
-{
+use Dotenv\Dotenv;
 
+final class Configurator extends \Nette\Configurator
+{
 	/**
 	 * Allowed IP addresses for debugging.
-	 * @var array
 	 */
-	protected $ips;
-
-	public function setIps($ips)
-	{
-		$this->ips = $ips;
-		return $this;
-	}
-
-
-	/**
-	 * Translation from URL to environment.
-	 * @var string[]
-	 */
-	protected $urls = [];
-
-	/**
-	 * @param string[] $urls
-	 * @return $this
-	 */
-	public function setUrls($urls)
-	{
-		$this->urls = $urls;
-		return $this;
-	}
-
-	/**
-	 * @deprecated Use method setUrls() instead.
-	 * @param string[] $domains
-	 */
-	public function setDomains($domains)
-	{
-		$this->setUrls($domains);
-	}
-
+	protected static array $debugIps = [];
 
 	/**
 	 * Developers allowed debugging.
-	 * @var array
 	 */
-	protected $developers;
+	protected static array $developers = [];
 
-	/**
-	 * Adds new developer.
-	 * @param string Developer's public key obtained by self::newDeveloper.
-	 * @param boolean Can the developer debug from any IP?
-	 */
-	public function addDeveloper($publicKey, $ipIndependent = FALSE)
+	private static bool $debugMode = false;
+
+	public string $configDirectory = '';
+
+
+	public function loadEnv(string $envDirectory, array $additionalFiles = []): self
 	{
-		list($slug, $hash) = static::explodeKeySlug($publicKey);
-		$this->developers[$slug] = [
-			'hash' => $hash,
-			'ipIndependent' => $ipIndependent,
-		];
+		$env = Dotenv::createImmutable($envDirectory, ['.env.common', '.env'], false)->load();
+		$this->addStaticParameters(['env' => $env]);
 		return $this;
 	}
 
-	/**
-	 * Config file name mask.
-	 * @var string
-	 */
-	protected $configFile = 'config.%environment%.neon';
+
+	public function setDebugIps(array $ips): self
+	{
+		self::$debugIps = $ips;
+		return $this;
+	}
+
 
 	/**
-	 * Sets config file name mask.
-	 * @param string $configFile
+	 * @param string|array $publicKey
 	 * @return $this
 	 */
-	public function setConfigFile($configFile)
+	public function addDeveloper($publicKey): self
 	{
-		$this->configFile = $configFile;
-		return $this;
-	}
-
-
-	/**
-	 * Set parameter %debugMode%.
-	 * @param  bool|string|array
-	 * @return self
-	 */
-	public function setDebugMode($value = NULL)
-	{
-		if ($value === NULL) {
-			$value = $this->detectDebugModeByKey();
+		if (self::$debugMode) {
+			throw new \Exception('Use ' . __METHOD__ . '() before setDebugMode()');
 		}
 
-		return parent::setDebugMode($value);
-	}
-
-
-	/**
-	 * Sets the environment variable. If NULL is passed, environment is
-	 * computed using URL list and argv. Possibilities:
-	 * - Write "--env <environment>" as parameter of CLI command.
-	 * - Do request to URL specified by self::setUrls.
-	 * @param string|null $environment
-	 * @return self
-	 */
-	public function setEnvironment($environment = null) {
-
-		if ($environment === null) {
-
-			if (php_sapi_name() === 'cli') {
-				// CLI
-
-				// --env <environment>
-				if (($argument = static::getServerArgv('env')) === null) {
-					throw new \Exception("Parameter '--env' is required.");
-				}
-
-				$this->staticParameters['environment'] = $argument;
-			} else {
-				// HTTP request
-
-				$this->staticParameters['environment'] = static::getConfigByUrl($this->urls);
-			}
-		} else {
-			$this->staticParameters['environment'] = $environment;
+		$publicKey = (array) $publicKey;
+		
+		foreach ($publicKey as $_publicKey) {
+			list($slug, $hash) = self::explodeKeySlug($_publicKey);
+			self::$developers[$slug] = $hash;
 		}
 
 		return $this;
 	}
 
 
-	public function getEnvironment(): ?string
+	public function setDebugMode($value): self
 	{
-		if (! isset($this->staticParameters['environment'])) {
-			return null;
+		if (!is_bool($value)) {
+			throw new \Exception('Parameter "value" must be of type boolean.');
 		}
 
-		return $this->staticParameters['environment'];
+		self::$debugMode = $value;
+
+		return parent::setDebugMode(self::detectDebugMode());
 	}
 
 
 	/**
-	 * @param string $name
-	 * @return string|NULL
+	 * @param string|array $config
+	 * @return $this
 	 */
-	public static function getServerArgv($name) {
-
-		$prevArgv = NULL;
-		$result = NULL;
-
-		foreach ($_SERVER['argv'] as $argv) {
-			if ($prevArgv === "--$name") { // --env <value>
-				$result = $argv;
-				$prevArgv = null;
-			} elseif (strpos($argv, "--$name=") === 0) { // --env=<value>
-				list(, $result) = explode('=', $argv);
-			} else {
-				$prevArgv = $argv;
-			}
-		}
-
-		return $result;
-	}
-
-
-	public function addEnvironmentConfig(string $configPath = null): self
+	public function addConfig($config): self
 	{
-		if (! $this->getEnvironment()) {
-			throw new \Exception('Environment is not set.');
+		$config = (array) $config;
+		
+		foreach ($config as $_config) {
+			return parent::addConfig($this->configDirectory ? $this->configDirectory . '/' . $_config . '.neon' : $_config);
 		}
-
-		$fullPath = ($configPath ?: $this->configPath) . '/' . str_replace('%environment%', $this->getEnvironment(), $this->configFile);
-
-		if (! file_exists($fullPath)) {
-			throw new \Nette\FileNotFoundException("Config file '$fullPath' not found!");
-		}
-
-		parent::addConfig($fullPath);
-
+		
 		return $this;
-	}
-	
-	
-	public function addConfig($config)
-	{
-		return parent::addConfig($this->configPath ? $this->configPath . '/' . $config : $config);
 	}
 
 
@@ -195,7 +90,7 @@ class Configurator extends \Nette\Configurator
 	 * @param string Slug which serves as public key comment. It's typically
 	 * developer's name. Can contain only these characters: '0-9A-Za-z./'.
 	 */
-	public static function newDeveloper($slug)
+	public static function newDeveloper(string $slug): void
 	{
 		$password = \Nette\Utils\Random::generate(32, '!-~');	// This is sufficient for strong security.
 		$secret = $slug .'@'. $password;
@@ -210,74 +105,86 @@ class Configurator extends \Nette\Configurator
 		die();
 	}
 
+
 	/**
 	 * Detects debug mode by public and private keys stored in cookie.
-	 * @return bool
 	 */
-	protected function detectDebugModeByKey() {
-
-		if (getenv('NETTE_DEBUG')) {
-			// You can overwrite this in your bootstrap.php by calling `->setDebugMode(php_sapi_name() == 'cli' ? FALSE : NULL)`.
-			return TRUE;
-		}
-
-		if (!isset($_COOKIE[self::COOKIE_SECRET]) || !is_string($_COOKIE[self::COOKIE_SECRET])) {
-			return FALSE;
-		}
-
-		$secret = $_COOKIE[self::COOKIE_SECRET];
-		list($slug, $password) = static::explodeKeySlug($secret);
-
-		if (!isset($this->developers[$slug])) {
-			return FALSE;
-		}
-
-		$developer = $this->developers[$slug];
-
-		if (!$developer['ipIndependent'] && !parent::detectDebugMode($this->ips)) {
-			return FALSE;
-		}
-
-		return password_verify($password, $developer['hash']);
-	}
-
-	protected static function explodeKeySlug($key)
+	public static function detectDebugMode($list = null): bool
 	{
-		return explode('@', $key, 2);
+		if ($list) {
+			throw new \Exception('Use "setDebugIps" method instead of "list" parameter.');
+		}
+
+		if (Configurator::isCli() || !self::$developers) {
+			return self::$debugMode;
+		}
+
+		if (empty($_COOKIE[self::COOKIE_SECRET])) {
+			return false;
+		}
+		
+		$parts = static::explodeKeySlug($_COOKIE[self::COOKIE_SECRET]);
+		if (count($parts) !== 2) {
+			return false;
+		}
+		list($slug, $password) = $parts;
+
+		return
+			isset(self::$developers[$slug])
+			&&
+			(!self::$debugIps || parent::detectDebugMode(self::$debugIps))
+			&&
+			password_verify($password, self::$developers[$slug]);
 	}
+
 
 	/**
 	 * @param  string        error log directory
 	 * @param  string        administrator email
 	 * @return void
 	 */
-	public function enableDebugger(?string $logDirectory = NULL, ?string $email = NULL): void {
+	public function enableDebugger(?string $logDirectory = NULL, ?string $email = NULL): void 
+	{
 		\Tracy\Debugger::$logSeverity = E_ALL;
 		parent::enableDebugger($logDirectory, $email);
 	}
 
-	public function enableTracy(string $logDirectory = null, string $email = null): void {
+
+	public function enableTracy(string $logDirectory = null, string $email = null): void 
+	{
 		\Tracy\Debugger::$logSeverity = E_ALL;
 		parent::enableTracy($logDirectory, $email);
 	}
-	
 
-	public string $configPath = '';
-	
-	public function setConfigPath(string $configPath): self
+
+	public function setConfigDirectory(string $configDirectory): self
 	{
-		$this->configPath = $configPath;
-		
+		$this->configDirectory = $configDirectory;
 		return $this;
 	}
-	
-	public function getConfigPath(): string
+
+
+	public function getConfigDirectory(): string
 	{
-		return $this->configPath;
+		return $this->configDirectory;
 	}
 
-	public static function getConfigByUrl($urls)
+
+	public static function isCli(): bool
 	{
+		return php_sapi_name() === 'cli';
+	}
+
+
+	/**
+	 * @throws \Exception
+	 */
+	public static function parseConfigFrom(string $value): array
+	{
+		if (!$urls = json_decode($value)) {
+			return self::parseConfigFromValue($value);
+		}
+
 		if (! isset($_SERVER['HTTP_HOST'])) {
 			throw new \Exception('Variable \'$_SERVER[HTTP_HOST]\' is not set.');
 		}
@@ -289,19 +196,32 @@ class Configurator extends \Nette\Configurator
 		// Exclude server port and parameters.
 		$requestUrl = explode(':', $_SERVER['HTTP_HOST'])[0] . explode('?', $_SERVER['REQUEST_URI'])[0];
 
-		foreach ($urls as $url => $env) {
+		foreach ($urls as $url => $value) {
 			if (strpos($url, '^') === 0) {
 				// Key in $this->urls can be regex (starts with '^').
 				if (preg_match("\x01$url\x01", $requestUrl)) {
-					return $env;
+					return self::parseConfigFromValue($value);
 				}
 			} else {
 				// Or just a regular string.
 				if (strpos($requestUrl . '/',  $url . '/') === 0) {
 					// $requestUrl starts with $url and continues with a slash or ends.
-					return $env;
+					return self::parseConfigFromValue($value);
 				}
 			}
 		}
+
+		return [];
+	}
+
+	private static function parseConfigFromValue(string $value): array
+	{
+		return explode(',', $value);
+	}
+
+
+	private static function explodeKeySlug(string $key): array
+	{
+		return explode('@', $key);
 	}
 }
