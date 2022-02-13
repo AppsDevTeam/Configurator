@@ -24,11 +24,10 @@ $configurator
 $configurator
 	->setConfigDirectory(__DIR__ . '/config')
 	->addConfig('common')
+	->addConfig('interface/' . php_sapi_name())
 	->addConfig('stage/' . $_ENV['STAGE'])
-	->addConfig(Configurator::parseConfigFrom($_ENV['NETTE_ENV']))
-	->addConfig(
-		$_ENV['NETTE_TEST'] || !Configurator::isCli() && $_SERVER['SERVER_PORT'] === '1420' // A = 1, D = 4, T = 20
-			? 'test/' . $_ENV['STAGE'] . '.neon'
-			: null
-	);
+	->addConfig(explode(',', $_ENV['NETTE_ENV']))
+	->addConfig(Configurator::isCli() && Configurator::get('country') ? 'cli-country' : null)
+	->addConfig(Configurator::get('country') ? 'env/' . $_ENV['STAGE'] . '-' . Configurator::get('country') : null)
+	->addConfig($_ENV['NETTE_TEST'] ? 'test' : null);
 ```
