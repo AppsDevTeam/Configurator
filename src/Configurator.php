@@ -26,7 +26,7 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 	public function loadEnv(string $envDirectory, array $additionalFiles = []): self
 	{
 		Dotenv::createImmutable($envDirectory, array_merge($additionalFiles, ['.env']), false)->load();
-		$this->addStaticParameters(['env' => Dotenv::createArrayBacked($envDirectory)->load()]);
+		$this->addStaticParameters(['env' => array_intersect_key($_ENV, Dotenv::createArrayBacked($envDirectory)->load())]);
 		return $this;
 	}
 
