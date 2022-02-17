@@ -197,6 +197,7 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 
 	private static function explodeKeySlug(string $key): array
 	{
-		return explode('@', $key);
+		// we have to set $limit because the password part can contain @
+		return explode('@', $key, 2);
 	}
 }
