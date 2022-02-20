@@ -2,8 +2,6 @@
 
 namespace ADT;
 
-use Dotenv\Dotenv;
-
 final class Configurator extends \Nette\Bootstrap\Configurator
 {
 	/**
@@ -25,9 +23,21 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 
 	public function loadEnv(string $envDirectory, array $additionalFiles = []): self
 	{
-		$params = [$envDirectory, array_merge($additionalFiles, ['.env']), false];
-		Dotenv::createImmutable(...$params)->load();
-		$this->addStaticParameters(['env' => array_intersect_key($_ENV, Dotenv::createArrayBacked(...$params)->load())]);
+		$envs = [];
+		foreach (array_merge($additionalFiles, ['.env']) as $_envFile) {
+			 $envs = array_merge(
+				 (new \josegonzalez\Dotenv\Loader($envDirectory . '/' . $_envFile))
+					->parse()
+					->skipExisting()
+					->toArray(),
+			 	$envs
+			);
+		}
+
+		$_ENV = array_merge($envs, $_ENV);
+
+		$this->addStaticParameters(['env' => array_intersect_key($_ENV, $envs)]);
+
 		return $this;
 	}
 
