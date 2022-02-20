@@ -2,7 +2,6 @@
 	"name": "adt/configurator",
 	"type": "library",
 	"description": "Extended nette/configurator",
-	"homepage": "https://www.appsdevteam.com",
 	"license": ["MIT"],
 	"authors": [
 		{
@@ -12,7 +11,7 @@
 		}
 	],
 	"support": {
-		"email": "hello@appsdevteam.com",
+		"email": "support@appsdevteam.com",
 		"issues": "https://github.com/AppsDevTeam/Configurator/issues"
 	},
 	"require": {
