@@ -106,6 +106,7 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 				}
 
 				self::$parameters[$parts[0]] = $parts[1];
+				$this->addDynamicParameters(self::$parameters);
 			}
 			parent::addConfig($_configPath);
 		}
