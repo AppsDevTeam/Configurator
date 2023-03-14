@@ -70,7 +70,7 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 	}
 
 
-	public function setDebugMode($value): self
+	public function setDebugMode(bool|string|array $value): static
 	{
 		if (!is_bool($value)) {
 			throw new \Exception('Parameter "value" must be of type boolean.');
@@ -82,11 +82,7 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 	}
 
 
-	/**
-	 * @param string|array|null $config
-	 * @return $this
-	 */
-	public function addConfig($config): self
+	public function addConfig(string|array|null $config): static
 	{
 		$config = (array) $config;
 
