@@ -34,8 +34,14 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 			);
 		}
 
+		// arguments of array_merge has to be in this order
 		$_ENV = array_merge($envs, $_ENV);
 
+		foreach ($_ENV as &$_value) {
+			$_value = $this->convertString($_value);
+		}
+
+		// arguments of array_intersect_key has to be in this order
 		$this->addStaticParameters(['env' => array_intersect_key($_ENV, $envs)]);
 
 		return $this;
@@ -205,5 +211,34 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 	{
 		// we have to set $limit because the password part can contain @
 		return explode('@', $key, 2);
+	}
+
+	private function convertString($str)
+	{
+		if (!is_string($str)) {
+			return $str;
+		}
+
+		// Pokud řetězec obsahuje pouze číslice, vratíme integer
+		if (ctype_digit($str)) {
+			return (int)$str;
+		}
+
+		// Pokud řetězec obsahuje číslice a případně jednu desetinnou tečku, vratíme float
+		if (preg_match('/^\d+\.\d+$/', $str)) {
+			return (float)$str;
+		}
+
+		// Pro "true" a "false" vrátíme boolean
+		if (strtolower($str) === 'true') {
+			return true;
+		}
+
+		if (strtolower($str) === 'false') {
+			return false;
+		}
+
+		// V opačném případě vratíme původní řetězec
+		return $str;
 	}
 }
