@@ -224,7 +224,7 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 		if (ctype_digit($str)) {
 			// když začíná 0 a má víc jak 1 znak, vratíme string
 			if (str_starts_with($str, '0') && strlen($str) > 1) {
-				return (string)$str;
+				return $str;
 			}
 			return (int)$str; // jinak vratíme integer
 		}
