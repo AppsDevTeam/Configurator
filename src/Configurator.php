@@ -220,9 +220,13 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 			return $str;
 		}
 
-		// Pokud řetězec obsahuje pouze číslice, vratíme integer
+		// Pokud řetězec obsahuje pouze číslice
 		if (ctype_digit($str)) {
-			return (int)$str;
+			// když začíná 0 a má víc jak 1 znak, vratíme string
+			if (str_starts_with($str, '0') && strlen($str) > 1) {
+				return $str;
+			}
+			return (int)$str; // jinak vratíme integer
 		}
 
 		// Pokud řetězec obsahuje číslice a případně jednu desetinnou tečku, vratíme float
