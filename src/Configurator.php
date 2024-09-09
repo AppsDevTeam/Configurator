@@ -259,7 +259,7 @@ class Configurator extends \Nette\Configurator
 	 */
 	protected function detectDebugModeByKey() {
 
-		if (getenv('NETTE_DEBUG')) {
+		if (getenv('NETTE_DEBUG') || getenv('APP_DEBUG')) {
 			// You can overwrite this in your bootstrap.php by calling `->setDebugMode(php_sapi_name() == 'cli' ? FALSE : NULL)`.
 			return TRUE;
 		}
