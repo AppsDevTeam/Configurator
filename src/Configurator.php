@@ -129,7 +129,7 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 	}
 
 
-	public function enableTracy(string $logDirectory = null, string $email = null): void
+	public function enableTracy(?string $logDirectory = null, ?string $email = null): void
 	{
 		\Tracy\Debugger::$logSeverity = E_ALL;
 		parent::enableTracy($logDirectory, $email);
