@@ -24,18 +24,18 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 	public function loadEnv(string $envDirectory, array $additionalFiles = []): self
 	{
 		$envs = [];
-		foreach (array_merge($additionalFiles, ['.env']) as $_envFile) {
+		foreach (array_merge(['.env'], $additionalFiles) as $_envFile) {
 			 $envs = array_merge(
+				 $envs,
 				 (new \josegonzalez\Dotenv\Loader($envDirectory . '/' . $_envFile))
 					->parse()
 					->skipExisting()
 					->toArray(),
-			 	$envs
 			);
 		}
 
 		// arguments of array_merge has to be in this order
-		$_ENV = array_merge($envs, $_ENV);
+		$_ENV = array_merge($_ENV, $envs);
 
 		foreach ($_ENV as &$_value) {
 			$_value = $this->convertString($_value);
