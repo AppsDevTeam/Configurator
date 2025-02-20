@@ -246,4 +246,33 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 		// V opačném případě vratíme původní řetězec
 		return $str;
 	}
+
+	public static function getConfigByUrl($urls): string
+	{
+		if (! isset($_SERVER['HTTP_HOST'])) {
+			throw new \Exception('Variable \'$_SERVER[HTTP_HOST]\' is not set.');
+		}
+
+		if (! isset($_SERVER['REQUEST_URI'])) {
+			throw new \Exception('Variable \'$_SERVER[REQUEST_URI]\' is not set.');
+		}
+
+		// Exclude server port and parameters.
+		$requestUrl = explode(':', $_SERVER['HTTP_HOST'])[0] . explode('?', $_SERVER['REQUEST_URI'])[0];
+
+		foreach ($urls as $url => $env) {
+			if (strpos($url, '^') === 0) {
+				// Key in $this->urls can be regex (starts with '^').
+				if (preg_match("\x01$url\x01", $requestUrl)) {
+					return $env;
+				}
+			} else {
+				// Or just a regular string.
+				if (strpos($requestUrl . '/',  $url . '/') === 0) {
+					// $requestUrl starts with $url and continues with a slash or ends.
+					return $env;
+				}
+			}
+		}
+	}
 }
