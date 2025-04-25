@@ -15,10 +15,11 @@
 		"issues": "https://github.com/AppsDevTeam/Configurator/issues"
 	},
 	"require": {
+		"ext-ctype": "*",
 		"nette/bootstrap": "^3.0",
 		"tracy/tracy": "^2.6",
 		"josegonzalez/dotenv": "^4.0"
-	},
+    },
 	"autoload": {
 		"psr-4": {
 			"ADT\\": "src/"
