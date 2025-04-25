@@ -163,7 +163,7 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 		return explode('@', $key, 2);
 	}
 
-	private function convertString($str): float|bool|int|string
+	private function convertString($str): float|bool|int|string|null
 	{
 		if (!is_string($str)) {
 			return $str;
