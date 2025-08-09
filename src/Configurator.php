@@ -31,6 +31,10 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 		$_ENV = array_merge($envs, $_ENV);
 
 		foreach ($_ENV as &$_value) {
+			if (!is_string($_value)) {
+				continue;
+			}
+
 			$_value = $this->convertString($_value);
 		}
 
@@ -163,12 +167,8 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 		return explode('@', $key, 2);
 	}
 
-	private function convertString($str): float|bool|int|string|null
+	private function convertString(string $str): float|bool|int|string|null
 	{
-		if (!is_string($str)) {
-			return $str;
-		}
-
 		// Pokud řetězec obsahuje pouze číslice
 		if (ctype_digit($str)) {
 			// když začíná 0 a má víc jak 1 znak, vratíme string
