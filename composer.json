@@ -16,7 +16,7 @@
 	},
 	"require": {
 		"ext-ctype": "*",
-		"nette/bootstrap": "^3.0",
+		"nette/bootstrap": "^3.2",
 		"tracy/tracy": "^2.6",
 		"josegonzalez/dotenv": "^4.0"
     },

@@ -4,6 +4,7 @@ namespace ADT;
 
 use Exception;
 use josegonzalez\Dotenv\Loader;
+use Nette\DI\ContainerLoader;
 use Nette\Utils\Random;
 use Tracy\Debugger;
 
@@ -12,6 +13,10 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 	private static array $parameters = [];
 
 	private string $configDirectory = '';
+
+	private ?bool $autoRebuild = null;
+
+	private bool $debugModeByCookie = false;
 
 
 	public function loadEnv(string $envDirectory, array $additionalFiles = []): self
@@ -81,6 +86,44 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 	{
 		Debugger::$logSeverity = E_ALL;
 		parent::enableTracy($logDirectory, $email);
+	}
+
+
+	/**
+	 * Debug mode enabled by a developer cookie (list of developer keys) means a deployed server,
+	 * whose code does not change between deploys - the DI container is then never rebuilt, the same
+	 * as in production mode. With auto-rebuild nette/di invalidates the container in opcache on every
+	 * request (ContainerLoader::includeFreshFile), so each debug request recompiles it and wastes
+	 * opcache memory until opcache restarts.
+	 */
+	public function setDebugMode(bool|string|array $value): static
+	{
+		$this->debugModeByCookie = !is_bool($value);
+		return parent::setDebugMode($value);
+	}
+
+
+	/**
+	 * Overrides whether the DI container is rebuilt when its sources change (default: debug mode,
+	 * except debug mode enabled by a developer cookie).
+	 */
+	public function setAutoRebuild(bool $autoRebuild): self
+	{
+		$this->autoRebuild = $autoRebuild;
+		return $this;
+	}
+
+
+	public function loadContainer(): string
+	{
+		$loader = new ContainerLoader(
+			$this->getCacheDirectory() . '/nette.configurator',
+			$this->autoRebuild ?? ($this->staticParameters['debugMode'] && !$this->debugModeByCookie),
+		);
+		return $loader->load(
+			$this->generateContainer(...),
+			$this->generateContainerKey(),
+		);
 	}
 
 
