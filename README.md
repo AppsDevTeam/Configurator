@@ -60,3 +60,12 @@ MAINTENANCE_BYPASS=
 ```
 
 `Configurator::isMaintenance()` tells whether the maintenance is on.
+
+## Tracy bar with concurrent AJAX requests
+
+In debug mode `enableTracy()` stores the deferred Tracy bar content in `ADT\Tracy\LockFreeFileSession`
+instead of Tracy's `FileSession`. `FileSession` keeps the file of the `tracy-session` cookie
+locked for the whole request, so concurrent AJAX requests of one browser (a page firing several
+signals at once) run one after another. `LockFreeFileSession` locks the file only while reading
+and writing and merges the changes of concurrent requests. A storage set by the project before
+`enableTracy()` (`Debugger::setSessionStorage()`) is kept.

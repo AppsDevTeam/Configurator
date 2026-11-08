@@ -2,6 +2,7 @@
 
 namespace ADT;
 
+use ADT\Tracy\LockFreeFileSession;
 use Exception;
 use josegonzalez\Dotenv\Loader;
 use Nette\DI\ContainerLoader;
@@ -138,10 +139,33 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 	}
 
 
+	/**
+	 * In debug mode the deferred bar content is stored by LockFreeFileSession instead of Tracy's
+	 * FileSession, whose lock held for the whole request makes concurrent AJAX requests of one
+	 * browser wait for each other. A storage set by the project before is kept.
+	 */
 	public function enableTracy(?string $logDirectory = null, ?string $email = null): void
 	{
 		Debugger::$logSeverity = E_ALL;
+		if ($this->staticParameters['debugMode'] && !self::isCli()) {
+			try {
+				Debugger::setSessionStorage(new LockFreeFileSession(self::getTracySessionDirectory()));
+			} catch (Exception) {
+				// the project has set its own storage
+			}
+		}
 		parent::enableTracy($logDirectory, $email);
+	}
+
+
+	/** The same directory Tracy would pick for its FileSession */
+	private static function getTracySessionDirectory(): string
+	{
+		$dir = (string) session_save_path();
+		if (!@is_dir($dir)) { // @ - the path may be outside open_basedir
+			$dir = sys_get_temp_dir();
+		}
+		return $dir . '/tracy-session';
 	}
 
 
