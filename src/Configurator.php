@@ -51,6 +51,61 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 
 
 	/**
+	 * Maintenance window of a deploy (recipe of adt/docker-deployer, README "Maintenance during
+	 * migrations"): while the deploy runs migrations, the file MAINTENANCE_FILE exists on all
+	 * servers, so that the application holds no metadata locks of the tables being changed.
+	 * Commands of the deploy have MAINTENANCE_BYPASS=1 - read by getenv(), $_ENV holds the empty
+	 * value from .env. Call after loadEnv().
+	 *
+	 * @phpstan-impure
+	 */
+	public static function isMaintenance(): bool
+	{
+		$file = $_ENV['MAINTENANCE_FILE'] ?? getenv('MAINTENANCE_FILE');
+		if (!$file || getenv('MAINTENANCE_BYPASS')) {
+			return false;
+		}
+
+		clearstatcache(true, $file);
+		return file_exists($file);
+	}
+
+
+	/**
+	 * Handles the maintenance window before the DI container is created (no database connection):
+	 * - web: 503 with Retry-After ($template = own page, otherwise a default one)
+	 * - console: ends with exit code 0 (cron jobs skip a run), except $waitingCommands, which wait
+	 *   until the maintenance ends and then continue - supervisor would restart a consumer that
+	 *   exits in a loop
+	 *
+	 * @param list<string> $waitingCommands
+	 */
+	public function handleMaintenance(?string $template = null, array $waitingCommands = ['background-queue:consume']): void
+	{
+		if (!self::isMaintenance()) {
+			return;
+		}
+
+		if (self::isCli()) {
+			if (in_array($_SERVER['argv'][1] ?? null, $waitingCommands, true)) {
+				while (self::isMaintenance()) {
+					sleep(5);
+				}
+				return;
+			}
+			echo "Maintenance (database migrations) - the command is skipped.\n";
+			exit(0);
+		}
+
+		http_response_code(503);
+		header('Retry-After: 60');
+		header('Cache-Control: no-store');
+		require $template ?? __DIR__ . '/maintenance.phtml';
+		exit;
+	}
+
+
+	/**
 	 * @throws Exception
 	 */
 	public function addConfig(string|array|null $config): static

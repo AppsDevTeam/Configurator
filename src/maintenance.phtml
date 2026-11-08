@@ -1,0 +1,41 @@
+<?php
+
+declare(strict_types=1);
+
+// Default page of Configurator::handleMaintenance() (503 is already sent) - without Nette
+// and the database, the DI container is not created during maintenance.
+
+$content = 'Probíhá krátká údržba systému. Zkuste to, prosím, za chvíli znovu.';
+
+if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+	echo $content;
+	return;
+}
+
+echo <<<EOL
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset='utf-8'>
+<meta name='robots' content='noindex,nofollow'>
+<meta http-equiv='refresh' content='30'>
+<title>Probíhá údržba</title>
+
+<style>
+	#maintenance { position: absolute; top: 0; left: 0; right: 0; height: 70vh; min-height: 400px; display: flex; align-items: center; justify-content: center }
+	#maintenance div { max-width: 550px; color: #333 }
+	#maintenance h1 { font: bold 50px/1.1 sans-serif; margin: 40px }
+	#maintenance p { font: 20px/1.4 sans-serif; margin: 40px }
+</style>
+</head>
+<body>
+<div id=maintenance>
+	<div>
+		<h1>Probíhá údržba</h1>
+
+		<p>$content</p>
+	</div>
+</div>
+</body>
+</html>
+EOL;
