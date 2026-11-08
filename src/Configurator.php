@@ -87,7 +87,8 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 		}
 
 		if (self::isCli()) {
-			if (in_array($_SERVER['argv'][1] ?? null, $waitingCommands, true)) {
+			// Anywhere in argv, not just argv[1]: `bin/console -v background-queue:consume` is the consumer too
+			if (array_intersect($waitingCommands, array_slice($_SERVER['argv'] ?? [], 1)) !== []) {
 				while (self::isMaintenance()) {
 					sleep(5);
 				}
