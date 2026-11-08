@@ -69,3 +69,10 @@ locked for the whole request, so concurrent AJAX requests of one browser (a page
 signals at once) run one after another. `LockFreeFileSession` locks the file only while reading
 and writing and merges the changes of concurrent requests. A storage set by the project before
 `enableTracy()` (`Debugger::setSessionStorage()`) is kept.
+
+## Tests
+
+```
+composer install
+composer test
+```
