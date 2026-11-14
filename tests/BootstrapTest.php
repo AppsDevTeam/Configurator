@@ -84,6 +84,27 @@ final class BootstrapTest extends TestCase
 	}
 
 	#[RunInSeparateProcess]
+	public function testErrorPageOfPackageWithoutProjectOne(): void
+	{
+		$this->write('config/interface/ui.neon', "parameters:\n\tinterface: ui\n");
+
+		(new \FixtureApp\Bootstrap())->bootUI();
+
+		$this->assertSame(realpath(__DIR__ . '/../src/error.phtml'), realpath(\Tracy\Debugger::$errorTemplate));
+	}
+
+	#[RunInSeparateProcess]
+	public function testProjectErrorPageReplacesPackageOne(): void
+	{
+		$this->write('config/interface/ui.neon', "parameters:\n\tinterface: ui\n");
+		$this->write('app/error.phtml', "<?php echo 'project error page';\n");
+
+		(new \FixtureApp\Bootstrap())->bootUI();
+
+		$this->assertSame(realpath($this->root . '/app/error.phtml'), realpath(\Tracy\Debugger::$errorTemplate));
+	}
+
+	#[RunInSeparateProcess]
 	public function testTenantAddsProjectAndStageConfigs(): void
 	{
 		$_ENV['APP_ENV'] = 'project/clinic';

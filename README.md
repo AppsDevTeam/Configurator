@@ -64,7 +64,9 @@ class Bootstrap extends \ADT\Bootstrap
 
 - `loadEnv()` and `handleMaintenance()` (see below) in the constructor
 - debug mode: console `APP_DEBUG`, web `APP_DEBUG` or a cookie with a key from `APP_DEVELOPERS`
-  (`Configurator::newDeveloper('JohnDoe')`); error page `app/error.phtml` when it exists
+  (`Configurator::newDeveloper('JohnDoe')`); error page of production
+  `src/error.phtml` of this package (500, AJAX gets just the text), `app/error.phtml` of the project
+  replaces it
 - Tracy (`log/`), `ADT\ErrorLogger` when adt/error-logger is installed (`$errorEmail`, null = off,
   e-mails only in production), `temp/`, parameters `rootDir`, `appDir`, `wwwDir`
 - configs `common`, `interface/<ui|console>`, `stage/<STAGE>`, `APP_ENV` (comma-separated),

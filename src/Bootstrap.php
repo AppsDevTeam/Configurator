@@ -13,7 +13,8 @@ use Tracy\Debugger;
  * and only adds what is its own (form extensions in init(), extra configs in addConfigs()).
  *
  * Layout: <root>/.env, <root>/config/{common,interface/<ui|console>,stage/<STAGE>,test}.neon,
- * <root>/log, <root>/temp, <root>/app/error.phtml (optional error page of production).
+ * <root>/log, <root>/temp, <root>/app/error.phtml (optional, replaces the error page of production of
+ * this package, src/error.phtml).
  *
  * Env: STAGE, APP_DEBUG (debug mode of the console and, when set, of the web),
  * APP_DEVELOPERS (JSON list of developer keys - debug mode of the web by a cookie),
@@ -84,14 +85,16 @@ abstract class Bootstrap
 
 	public function bootUI(): Container
 	{
+		// Error page of production: app/error.phtml of the project, otherwise the one of this package
 		$errorTemplate = $this->rootDir . '/app/error.phtml';
-		if (is_file($errorTemplate)) {
-			Debugger::$errorTemplate = $errorTemplate;
-			if (Debugger::$productionMode) {
-				Debugger::$onFatalError[] = function () use ($errorTemplate) {
-					require $errorTemplate;
-				};
-			}
+		if (!is_file($errorTemplate)) {
+			$errorTemplate = __DIR__ . '/error.phtml';
+		}
+		Debugger::$errorTemplate = $errorTemplate;
+		if (Debugger::$productionMode) {
+			Debugger::$onFatalError[] = function () use ($errorTemplate) {
+				require $errorTemplate;
+			};
 		}
 
 		// Locally APP_DEBUG is enough, on servers a cookie with a developer key is verified.
