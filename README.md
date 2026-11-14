@@ -32,6 +32,48 @@ $configurator
 	->addConfig($_ENV['NETTE_TEST'] ? 'test' : null);
 ```
 
+## Bootstrap of a project
+
+`ADT\Bootstrap` is the bootstrap of the AppsDevTeam web projects (sandbox layout: `.env`, `app/`,
+`config/`, `log/`, `temp/` in one root). The project's class only adds what is its own:
+
+```php
+namespace App;
+
+class Bootstrap extends \ADT\Bootstrap
+{
+	// deprecations of the vendor on the current PHP: out of strict mode of Tracy
+	protected bool $strictDeprecations = false;
+
+	protected function init(): void
+	{
+		// before the container: extension methods of forms ...
+		PhoneNumberInput::register();
+	}
+
+	protected function addConfigs(string $interface): void
+	{
+		// after common, interface/<ui|console>, stage/<STAGE> and APP_ENV, before test
+		$project = Configurator::get('project');
+		$this->configurator->addConfig($project ? 'project' : null);
+	}
+}
+```
+
+`new \App\Bootstrap()` (root = parent of the directory of the class) then `bootUI()` in
+`www/index.php`, `bootConsole()` in `bin/console` and the test bootstrap. It does:
+
+- `loadEnv()` and `handleMaintenance()` (see below) in the constructor
+- debug mode: console `APP_DEBUG`, web `APP_DEBUG` or a cookie with a key from `APP_DEVELOPERS`
+  (`Configurator::newDeveloper('JohnDoe')`); error page `app/error.phtml` when it exists
+- Tracy (`log/`), `ADT\ErrorLogger` when adt/error-logger is installed (`$errorEmail`, null = off,
+  e-mails only in production), `temp/`, parameters `rootDir`, `appDir`, `wwwDir`
+- configs `common`, `interface/<ui|console>`, `stage/<STAGE>`, `APP_ENV` (comma-separated),
+  `addConfigs()`, `test` (`APP_TEST` in `.env` or env)
+- in test mode the parameters of [adt/make](https://github.com/AppsDevTeam/make) `make test`:
+  `testDbName` from env `TEST_DB_NAME` (a suite with its own database) and `testShardSuffix`
+  (`''` or `_<part>` from env `TEST_SHARD` or cookie `test_shard`) for a suite split into parts
+
 ## Maintenance window
 
 The recipe of [adt/docker-deployer](https://github.com/AppsDevTeam/docker-deployer) runs pending

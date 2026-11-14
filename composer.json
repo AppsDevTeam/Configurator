@@ -20,6 +20,9 @@
 		"tracy/tracy": "^2.9",
 		"josegonzalez/dotenv": "^4.0"
     },
+	"suggest": {
+		"adt/error-logger": "ADT\\Bootstrap installs it and sends errors of production by e-mail"
+	},
 	"autoload": {
 		"psr-4": {
 			"ADT\\": "src/"
