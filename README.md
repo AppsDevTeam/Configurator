@@ -47,15 +47,14 @@ class Bootstrap extends \ADT\Bootstrap
 
 	protected function init(): void
 	{
-		// before the container: extension methods of forms ...
-		PhoneNumberInput::register();
+		// before the container (static registrations of the project)
+		CzechValidationMessages::register();
 	}
 
 	protected function addConfigs(string $interface): void
 	{
-		// after common, interface/<ui|console>, stage/<STAGE> and APP_ENV, before test
-		$project = Configurator::get('project');
-		$this->configurator->addConfig($project ? 'project' : null);
+		// after common, interface/<ui|console>, stage/<STAGE>, APP_ENV and tenant configs, before test
+		$this->configurator->addConfig($_ENV['APP_SANDBOX'] ? 'sandbox' : null);
 	}
 }
 ```
@@ -69,7 +68,10 @@ class Bootstrap extends \ADT\Bootstrap
 - Tracy (`log/`), `ADT\ErrorLogger` when adt/error-logger is installed (`$errorEmail`, null = off,
   e-mails only in production), `temp/`, parameters `rootDir`, `appDir`, `wwwDir`
 - configs `common`, `interface/<ui|console>`, `stage/<STAGE>`, `APP_ENV` (comma-separated),
-  `addConfigs()`, `test` (`APP_TEST` in `.env` or env)
+  tenant configs, `addConfigs()`, `test` (`APP_TEST` in `.env` or env)
+- tenants (several projects in one code base): `APP_ENV=project/<name>` (`config/project/<name>.neon`)
+  adds `config/project.neon` (shared by the tenants) and `config/env/<STAGE>-<name>.neon`
+  (`$tenantGroup`, null = off)
 - in test mode the parameters of [adt/make](https://github.com/AppsDevTeam/make) `make test`:
   `testDbName` from env `TEST_DB_NAME` (a suite with its own database) and `testShardSuffix`
   (`''` or `_<part>` from env `TEST_SHARD` or cookie `test_shard`) for a suite split into parts

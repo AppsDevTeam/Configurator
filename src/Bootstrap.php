@@ -18,6 +18,10 @@ use Tracy\Debugger;
  * Env: STAGE, APP_DEBUG (debug mode of the console and, when set, of the web),
  * APP_DEVELOPERS (JSON list of developer keys - debug mode of the web by a cookie),
  * APP_ENV (comma-separated extra configs), APP_TEST (test mode, adds test.neon).
+ *
+ * Several tenants (projects) in one code base: APP_ENV=project/<name> (config/project/<name>.neon)
+ * adds config/project.neon (shared by all tenants, e.g. the database of the tenant from its
+ * parameters) and config/env/<STAGE>-<name>.neon (overrides of the tenant on the stage).
  */
 abstract class Bootstrap
 {
@@ -36,6 +40,9 @@ abstract class Bootstrap
 	 * responses and break snippets).
 	 */
 	protected bool $strictDeprecations = true;
+
+	/** Directory of the tenant configs in APP_ENV (<group>/<name>), null = no tenants */
+	protected ?string $tenantGroup = 'project';
 
 
 	/**
@@ -62,7 +69,7 @@ abstract class Bootstrap
 	}
 
 
-	/** Extra configs after common, interface, stage and APP_ENV, before test (e.g. per tenant) */
+	/** Extra configs after common, interface, stage, APP_ENV and the tenant configs, before test */
 	protected function addConfigs(string $interface): void
 	{
 	}
@@ -129,6 +136,13 @@ abstract class Bootstrap
 		// One by one - the inherited phpdoc of Nette addConfig() does not allow a list
 		foreach ($_ENV['APP_ENV'] ? explode(',', $_ENV['APP_ENV']) : [] as $envConfig) {
 			$this->configurator->addConfig($envConfig);
+		}
+
+		$tenant = $this->tenantGroup !== null ? Configurator::get($this->tenantGroup) : '';
+		if ($tenant !== '') {
+			$this->configurator
+				->addConfig($this->tenantGroup)
+				->addConfig('env/' . $_ENV['STAGE'] . '-' . $tenant);
 		}
 
 		$this->addConfigs($interface);

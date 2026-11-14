@@ -28,6 +28,9 @@ final class BootstrapTest extends TestCase
 		$this->write('config/stage/local.neon', "parameters:\n\tstage: local\n");
 		$this->write('config/extra.neon', "parameters:\n\textra: yes\n");
 		$this->write('config/tenant.neon', "parameters:\n\ttenant: yes\n");
+		$this->write('config/project.neon', "parameters:\n\tdatabase: db_%project%\n");
+		$this->write('config/project/clinic.neon', "parameters:\n\tproject: clinic\n");
+		$this->write('config/env/local-clinic.neon', "parameters:\n\tdomain: clinic.loc\n");
 		$this->write('config/test.neon', "parameters:\n\tfrom: test\n\ttestDbName: from_neon\n\ttestShardSuffix: ''\n");
 		$this->write('app/Bootstrap.php', <<<'PHP'
 			<?php
@@ -78,6 +81,17 @@ final class BootstrapTest extends TestCase
 		$this->assertTrue($container->getParameter('extra'));
 		$this->assertTrue($container->getParameter('tenant'));
 		$this->assertTrue($container->getParameter('debugMode'));
+	}
+
+	#[RunInSeparateProcess]
+	public function testTenantAddsProjectAndStageConfigs(): void
+	{
+		$_ENV['APP_ENV'] = 'project/clinic';
+
+		$container = (new \FixtureApp\Bootstrap($this->root))->bootConsole();
+
+		$this->assertSame('db_clinic', $container->getParameter('database'));
+		$this->assertSame('clinic.loc', $container->getParameter('domain'));
 	}
 
 	#[RunInSeparateProcess]
