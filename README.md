@@ -69,6 +69,11 @@ class Bootstrap extends \ADT\Bootstrap
   replaces it
 - Tracy (`log/`), `ADT\ErrorLogger` when adt/error-logger is installed (`$errorEmail`, null = off,
   e-mails only in production), `temp/`, parameters `rootDir`, `appDir`, `wwwDir`
+- secrets hidden in the Tracy log (HTML and `.md`, the attachments of ErrorLogger e-mails) and on the
+  BlueScreen: a scrubber hides every key matching `$sensitiveKeys` (`*PASS*`, `*SECRET*`, `*TOKEN*`,
+  `*_KEY*`, `*SALT*`, `*DSN*`, `*AUTH*`, `APP_DEVELOPERS`, cookies and the session ID, `nette-debug`,
+  `MAINTENANCE_BYPASS` ...) - `$_ENV` and `$_SERVER` carry the whole `.env` of the container. A project
+  extends the pattern by overriding the property; a scrubber set by the project before is kept
 - configs `common`, `interface/<ui|console>`, `stage/<STAGE>`, `APP_ENV` (comma-separated),
   tenant configs, `addConfigs()`, `test` (`APP_TEST` in `.env` or env)
 - tenants (several projects in one code base): `APP_ENV=project/<name>` (`config/project/<name>.neon`)

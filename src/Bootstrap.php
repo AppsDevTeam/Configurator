@@ -45,6 +45,15 @@ abstract class Bootstrap
 	/** Directory of the tenant configs in APP_ENV (<group>/<name>), null = no tenants */
 	protected ?string $tenantGroup = 'project';
 
+	/**
+	 * Keys whose values Tracy hides in the error log (HTML and .md, also attached to the e-mails of
+	 * ErrorLogger) and on the BlueScreen: $_ENV and $_SERVER carry the whole .env of the container
+	 * (FPM clear_env = no), $_COOKIE the session ID and the developer key. Tracy itself hides only
+	 * a few exact names (password, pin ...). A project extends the pattern by overriding it.
+	 */
+	protected string $sensitiveKeys = '~pass|pwd|secret|token|(^|[_-])(api)?key($|[_-])|apikey|salt|dsn'
+		. '|(^|[_-])auth|authorization|developers|cookie|sessid|session|bypass|nette-debug~i';
+
 
 	/**
 	 * @param string|null $rootDir root of the project, default = parent directory of the directory
@@ -107,6 +116,11 @@ abstract class Bootstrap
 	protected function setupContainer(string $interface): Container
 	{
 		$this->configurator->enableTracy($this->rootDir . '/log');
+		$blueScreen = Debugger::getBlueScreen();
+		$projectScrubber = $blueScreen->scrubber;
+		$blueScreen->scrubber = fn(string $key, mixed $value, ?string $class): bool
+			=> (bool) preg_match($this->sensitiveKeys, $key)
+				|| ($projectScrubber !== null && $projectScrubber($key, $value, $class));
 		if (!$this->strictDeprecations) {
 			Debugger::$strictMode = E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED;
 			error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);

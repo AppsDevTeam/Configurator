@@ -141,6 +141,33 @@ final class BootstrapTest extends TestCase
 		$this->assertSame('from_neon', $container->getParameter('testDbName'));
 	}
 
+	#[RunInSeparateProcess]
+	public function testSecretsAreHiddenInErrorLog(): void
+	{
+		// Built at runtime: BlueScreen shows the source of this test too, the values must not be in it
+		$secret = fn(string $name): string => 'sec' . 'ret-' . $name;
+		$secrets = [
+			'DB_PASSWORD' => $secret('db-password'),
+			'MAILAPI_KEY' => $secret('mailapi-key'),
+			'ZOHO_REFRESH_TOKEN' => $secret('refresh-token'),
+			'APP_DEVELOPERS' => '["' . $secret('developer-key') . '"]',
+			'HTTP_COOKIE' => 'PHPSESSID=' . $secret('session-id'),
+		];
+		$_ENV = $secrets + $_ENV + ['PROJECT_URL' => 'visible-project-url'];
+		$_SERVER = $secrets + $_SERVER;
+		$_COOKIE = ['PHPSESSID' => $secret('session-id'), 'nette-debug' => $secret('developer-key')];
+
+		(new \FixtureApp\Bootstrap($this->root))->bootConsole();
+		$file = $this->root . '/log/exception.html';
+		\Tracy\Debugger::getBlueScreen()->renderToFile(new \RuntimeException('boom'), $file);
+
+		// the environment is in the HTML log only, the .md one (for AI agents) has none
+		$this->assertStringContainsString('visible-project-url', (string) file_get_contents($file));
+		foreach ([$file, substr($file, 0, -5) . '.md'] as $log) {
+			$this->assertStringNotContainsString($secret(''), (string) file_get_contents($log), $log);
+		}
+	}
+
 	private function write(string $file, string $content): void
 	{
 		$path = $this->root . '/' . $file;
