@@ -15,8 +15,6 @@ $configurator = new Configurator();
 
 $configurator->loadEnv(__DIR__ . '/..', ['.env.common']);
 
-// Uncomment line below to create hash for new developer.
-// ADT\Configurator::newDeveloper('JohnDoe');
 $configurator
 	->addDeveloper(json_decode($_ENV['NETTE_DEVELOPERS'], true))
 	->setDebugMode((bool) $_ENV['NETTE_DEBUG']);
@@ -63,8 +61,8 @@ class Bootstrap extends \ADT\Bootstrap
 `www/index.php`, `bootConsole()` in `bin/console` and the test bootstrap. It does:
 
 - `loadEnv()` and `handleMaintenance()` (see below) in the constructor
-- debug mode: console `APP_DEBUG`, web `APP_DEBUG` or a cookie with a key from `APP_DEVELOPERS`
-  (`Configurator::newDeveloper('JohnDoe')`); error page of production
+- debug mode: console `APP_DEBUG`, web `APP_DEBUG` or a developer token (see *Debug mode on servers*);
+  error page of production
   `src/error.phtml` of this package (500, AJAX gets just the text), `app/error.phtml` of the project
   replaces it
 - Tracy (`log/`), `ADT\ErrorLogger` when adt/error-logger is installed (`$errorEmail`, null = off,
@@ -111,6 +109,26 @@ MAINTENANCE_BYPASS=
 ```
 
 `Configurator::isMaintenance()` tells whether the maintenance is on.
+
+## Debug mode on servers
+
+`APP_DEVELOPERS` is a JSON list of **public** Ed25519 keys of the developers (`"<Slug>@<base64>"`),
+nothing secret - it lives unencrypted in `config/project/.env.common`. A developer turns the debug mode on
+by the cookie `nette-debug` with a token signed by their private key (`ADT\DebugToken`): it is bound to
+the host (port ignored) and expires (at most 7 days), a leaked cookie works only there and until then.
+The private key never leaves the developer's machine (`~/.config/adt/debug-key`).
+
+With [adt/make](https://github.com/AppsDevTeam/make) in the `project/` directory of any project:
+
+```bash
+make debug-key SLUG=JohnDoe        # once: creates ~/.config/adt/debug-key, prints the public key
+make debug-token DOMAIN=www.example.cz [HOURS=12]   # the cookie + a line for the browser console
+```
+
+- New developer: `make debug-key`, add the printed line to `APP_DEVELOPERS` of the projects, deploy.
+- Leaving developer or a lost key: remove the line, deploy (until then tokens of the key work at most
+  until they expire). A new key = delete the key file, `make debug-key` again, replace the line.
+- Version 7 dropped the bcrypt keys (`newDeveloper()`), such entries of `APP_DEVELOPERS` are ignored.
 
 ## Tracy bar with concurrent AJAX requests
 

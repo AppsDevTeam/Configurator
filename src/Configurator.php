@@ -6,7 +6,6 @@ use ADT\Tracy\LockFreeFileSession;
 use Exception;
 use josegonzalez\Dotenv\Loader;
 use Nette\DI\ContainerLoader;
-use Nette\Utils\Random;
 use Tracy\Debugger;
 
 final class Configurator extends \Nette\Bootstrap\Configurator
@@ -215,61 +214,28 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 
 
 	/**
-	 * Dumps public and secret key for the new developer.
-	 * @param string $slug which serves as public key comment. It's typically
-	 * developer's name. Can contain only these characters: '0-9A-Za-z./'.
-	 */
-	public static function newDeveloper(string $slug): void
-	{
-		$password = Random::generate(32, '!-~');	// This is sufficient for strong security.
-		$secret = $slug .'@'. $password;
-		$public = $slug .'@'. password_hash($password, PASSWORD_DEFAULT);
-
-		echo "<h1>Public key</h1>";
-		Debugger::dump($public);
-		echo "<h1>Secret key</h1>";
-		Debugger::dump($secret);
-		echo "<h1>Secret key (URL encoded)</h1>";
-		Debugger::dump(urlencode($secret));
-		die();
-	}
-
-
-	/**
+	 * Debug mode of a deployed server: the cookie nette-debug with a token signed by the private key of
+	 * a developer from the list (APP_DEVELOPERS, public keys), bound to the host and with an expiry,
+	 * see DebugToken. A key and a token are made by `make debug-key` / `make debug-token` of adt/make.
+	 *
+	 * @param string|string[]|null $list
 	 * @throws Exception
 	 */
 	public static function detectDebugMode(string|array|null $list = null): bool
 	{
-		if (is_null($list)) {
+		if ($list === null) {
 			return false;
-		}
-
-		if (is_string($list)) {
-			$list = [$list];
 		}
 
 		if (php_sapi_name() === 'cli') {
 			throw new Exception('Not allowed for CLI.');
 		}
 
-		$developers = [];
-		foreach ($list as $_developer) {
-			list($slug, $hash) = self::explodeKeySlug($_developer);
-			$developers[$slug] = $hash;
-		}
-		if (empty($_COOKIE[self::CookieSecret])) {
-			return false;
-		}
-		$parts = self::explodeKeySlug($_COOKIE[self::CookieSecret]);
-		if (count($parts) !== 2) {
-			return false;
-		}
-		list($slug, $password) = $parts;
-
-		return
-			isset($developers[$slug])
-			&&
-			password_verify($password, $developers[$slug]);
+		return DebugToken::verify(
+			$_COOKIE[self::CookieSecret] ?? null,
+			(array) $list,
+			(string) ($_SERVER['HTTP_HOST'] ?? ''),
+		);
 	}
 
 
@@ -282,12 +248,6 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 	public static function get($name): string
 	{
 		return self::$parameters[$name] ?? '';
-	}
-
-	private static function explodeKeySlug(string $key): array
-	{
-		// we have to set $limit because the password part can contain @
-		return explode('@', $key, 2);
 	}
 
 	private function convertString(string $str): float|bool|int|string|null

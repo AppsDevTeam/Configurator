@@ -106,8 +106,8 @@ abstract class Bootstrap
 			};
 		}
 
-		// Locally APP_DEBUG is enough, on servers a cookie with a developer key is verified.
-		// New developer: Configurator::newDeveloper('JohnDoe')
+		// Locally APP_DEBUG is enough, on servers the cookie nette-debug with a token signed by a developer
+		// from APP_DEVELOPERS (public keys) is verified - make debug-key / debug-token of adt/make
 		$this->configurator->setDebugMode($_ENV['APP_DEBUG'] ? true : json_decode($_ENV['APP_DEVELOPERS'] ?? '[]', true));
 		return $this->setupContainer('ui');
 	}

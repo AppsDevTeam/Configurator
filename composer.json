@@ -16,6 +16,7 @@
 	},
 	"require": {
 		"ext-ctype": "*",
+		"ext-sodium": "*",
 		"nette/bootstrap": "^3.2",
 		"tracy/tracy": "^2.9",
 		"josegonzalez/dotenv": "^4.0"
