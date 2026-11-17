@@ -64,6 +64,7 @@ abstract class Bootstrap
 		$this->rootDir = $rootDir ?? dirname((string) (new ReflectionClass(static::class))->getFileName(), 2);
 		$this->configurator = new Configurator();
 		$this->configurator->loadEnv($this->rootDir);
+		$this->configurator->handlePreprodAccess();
 
 		// Maintenance window of a deploy (adt/docker-deployer): web 503, console commands skipped,
 		// consumers wait - before the DI container and any database connection exist
