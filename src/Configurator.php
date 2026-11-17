@@ -214,9 +214,11 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 
 
 	/**
-	 * Debug mode of a deployed server: the cookie nette-debug with a token signed by the private key of
-	 * a developer from the list (APP_DEVELOPERS, public keys), bound to the host and with an expiry,
-	 * see DebugToken. A key and a token are made by `make debug-key` / `make debug-token` of adt/make.
+	 * Debug mode of a deployed server: the cookie nette-debug with a token signed by the SSH key of
+	 * a developer from the list (APP_DEVELOPERS, public SSH keys), see DebugToken, made by
+	 * `make debug-token` of adt/make. Only when the edge proxy allows the IP of the client by the header
+	 * X-Nette-Debug-Allowed: 1 (nginx-proxy of server-management-scripts, NGINX_PROXY_DEBUG_IPS) - the
+	 * proxy always overwrites it, without the proxy (locally, directly) the cookie does nothing.
 	 *
 	 * @param string|string[]|null $list
 	 * @throws Exception
@@ -231,7 +233,7 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 			throw new Exception('Not allowed for CLI.');
 		}
 
-		return DebugToken::verify(
+		return ($_SERVER['HTTP_X_NETTE_DEBUG_ALLOWED'] ?? null) === '1' && DebugToken::verify(
 			$_COOKIE[self::CookieSecret] ?? null,
 			(array) $list,
 			(string) ($_SERVER['HTTP_HOST'] ?? ''),

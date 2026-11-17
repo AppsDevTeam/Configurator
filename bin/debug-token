@@ -1,11 +1,10 @@
 #!/usr/bin/env php
 <?php
 
-// Developer key and cookie of the debug mode (ADT\DebugToken), run by `make debug-key` and
-// `make debug-token` of adt/make in a throwaway container without network. The key file comes on stdin.
-//   debug-token new <slug>              prints the line of a new key file
-//   debug-token public < key            prints the line for APP_DEVELOPERS
-//   debug-token token <host> <hours> < key   prints the cookie nette-debug for the host
+// Cookie of the debug mode (ADT\DebugToken), run by `make debug-token` of adt/make in a throwaway
+// container without network; the signature itself is made on the host by ssh-keygen and ssh-agent.
+//   debug-token message <expiry> <host>          prints the text to sign
+//   debug-token token <expiry> <host> < sshsig   prints the cookie nette-debug
 
 declare(strict_types=1);
 
@@ -14,26 +13,21 @@ require __DIR__ . '/../src/DebugToken.php';
 use ADT\DebugToken;
 
 try {
+	$expiry = (int) ($argv[2] ?? 0);
+	$host = DebugToken::normalizeHost($argv[3] ?? '');
 	switch ($argv[1] ?? '') {
-		case 'new':
-			echo DebugToken::newKeyPair($argv[2] ?? '')[1], "\n";
-			break;
-
-		case 'public':
-			echo DebugToken::publicKeyLine((string) stream_get_contents(STDIN)), "\n";
+		case 'message':
+			echo DebugToken::message($expiry, $host);
 			break;
 
 		case 'token':
-			$host = DebugToken::normalizeHost($argv[2] ?? '');
-			$hours = (int) ($argv[3] ?? 12);
-			$token = DebugToken::create((string) stream_get_contents(STDIN), $host, $hours * 3600);
-			echo "Cookie nette-debug pro $host, platí $hours h:\n\n$token\n\n",
-				"Do konzole prohlížeče na https://$host/:\n\n",
-				"document.cookie = 'nette-debug=$token; path=/; max-age=", $hours * 3600, "; secure; samesite=strict';\n";
+			$token = DebugToken::create($expiry, $host, (string) stream_get_contents(STDIN));
+			$where = $host === DebugToken::AnyHost ? 'všechny domény' : $host;
+			echo "Cookie nette-debug pro $where, platí do ", date('j. n. Y H:i e', $expiry), ":\n\n$token\n";
 			break;
 
 		default:
-			fwrite(STDERR, "Usage: debug-token new <slug> | public < key | token <host> <hours> < key\n");
+			fwrite(STDERR, "Usage: debug-token message <expiry> <host> | token <expiry> <host> < sshsig\n");
 			exit(2);
 	}
 } catch (InvalidArgumentException $e) {

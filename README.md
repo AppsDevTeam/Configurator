@@ -112,23 +112,26 @@ MAINTENANCE_BYPASS=
 
 ## Debug mode on servers
 
-`APP_DEVELOPERS` is a JSON list of **public** Ed25519 keys of the developers (`"<Slug>@<base64>"`),
-nothing secret - it lives unencrypted in `config/project/.env.common`. A developer turns the debug mode on
-by the cookie `nette-debug` with a token signed by their private key (`ADT\DebugToken`): it is bound to
-the host (port ignored) and expires (at most 7 days), a leaked cookie works only there and until then.
-The private key never leaves the developer's machine (`~/.config/adt/debug-key`).
+The developer's own SSH key (ssh-ed25519) turns the debug mode on - nothing else is generated:
 
-With [adt/make](https://github.com/AppsDevTeam/make) in the `project/` directory of any project:
+- `APP_DEVELOPERS` (`config/project/.env.common`) is a JSON list of `"<Slug>@ssh-ed25519 <base64>"`, the
+  public SSH keys of the developers - nothing secret.
+- The cookie `nette-debug` carries a token: an expiry (at most 366 days) and a host (`*` = every host)
+  signed by the SSH key through ssh-agent (`ssh-keygen -Y sign -n nette-debug`, `ADT\DebugToken`). The
+  private key never leaves the developer's machine and never goes into a cookie.
+- The server turns the debug mode on only with the header `X-Nette-Debug-Allowed: 1`, which the edge
+  proxy (nginx-proxy of server-management-scripts) sends only to the IPs in `NGINX_PROXY_DEBUG_IPS` and
+  always overwrites. Without the proxy (locally, directly) the cookie does nothing; locally `APP_DEBUG=1`.
+
+With [adt/make](https://github.com/AppsDevTeam/make) in any project:
 
 ```bash
-make debug-key SLUG=JohnDoe        # once: creates ~/.config/adt/debug-key, prints the public key
-make debug-token DOMAIN=www.example.cz [HOURS=12]   # the cookie + a line for the browser console
+make debug-token [DOMAIN=www.example.cz] [DAYS=365]   # prints the cookie value
 ```
 
-- New developer: `make debug-key`, add the printed line to `APP_DEVELOPERS` of the projects, deploy.
-- Leaving developer or a lost key: remove the line, deploy (until then tokens of the key work at most
-  until they expire). A new key = delete the key file, `make debug-key` again, replace the line.
-- Version 7 dropped the bcrypt keys (`newDeveloper()`), such entries of `APP_DEVELOPERS` are ignored.
+- New developer: add `"<Slug>@" + ~/.ssh/id_ed25519.pub` (without the comment) to `APP_DEVELOPERS`, deploy.
+- Leaving developer: remove the line, deploy. Tokens of the key stop working at once.
+- A leaked cookie works only from the allowed IPs and until it expires.
 
 ## Tracy bar with concurrent AJAX requests
 

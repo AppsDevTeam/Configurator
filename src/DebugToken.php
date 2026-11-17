@@ -5,123 +5,140 @@ declare(strict_types=1);
 namespace ADT;
 
 /**
- * Developer cookie of the debug mode (nette-debug): "<slug>.<expiry>.<signature>", an Ed25519
- * signature of the slug, the expiry and the host by the private key of the developer. Servers know
- * only the public keys (APP_DEVELOPERS, "<slug>@<base64 public key>"), nothing secret is deployed,
- * and a leaked cookie works only on its host and only until it expires.
+ * Developer cookie of the debug mode (nette-debug): "<expiry>.<host>.<signature>", a signature of the
+ * expiry and the host ("*" = every host) by the SSH key (ssh-ed25519) of a developer, made by
+ * `ssh-keygen -Y sign -n nette-debug` (SSHSIG). Servers know only the public SSH keys (APP_DEVELOPERS,
+ * "<slug>@ssh-ed25519 <base64>"), nothing secret is deployed, and a leaked cookie stops working when
+ * it expires. On top of that ADT\Configurator requires the header X-Nette-Debug-Allowed: 1 of the
+ * edge proxy, which sends it only to the IPs allowed on the server.
  *
- * No dependencies: bin/debug-token requires this file directly (make debug-key / debug-token of
- * adt/make run it in a throwaway container without the vendor of the project).
+ * No dependencies: bin/debug-token requires this file directly (make debug-token of adt/make runs it
+ * in a throwaway container without the vendor of the project).
  */
 final class DebugToken
 {
+	public const Namespace = 'nette-debug';
+
 	/** Longest lifetime of a token a server accepts, counted from the moment of the request */
-	public const MaxLifetime = 7 * 24 * 3600;
+	public const MaxLifetime = 366 * 24 * 3600;
 
-	private const SlugPattern = '[A-Za-z0-9_-]{1,64}';
+	/** Host of a token valid on every host */
+	public const AnyHost = '*';
+
+
+	/** Text the developer signs */
+	public static function message(int $expiry, string $host): string
+	{
+		return self::Namespace . "\n" . $expiry . "\n" . self::normalizeHost($host);
+	}
 
 
 	/**
-	 * @return array{string, string} line for APP_DEVELOPERS ("<slug>@<public key>") and line of the
-	 *                               key file of the developer ("<slug>@<secret key>")
+	 * Data an SSH signature (SSHSIG) of the message actually signs, see PROTOCOL.sshsig of OpenSSH
 	 */
-	public static function newKeyPair(string $slug): array
+	public static function signedData(string $message): string
 	{
-		self::assertSlug($slug);
-		$keyPair = sodium_crypto_sign_keypair();
-		return [
-			$slug . '@' . base64_encode(sodium_crypto_sign_publickey($keyPair)),
-			$slug . '@' . base64_encode(sodium_crypto_sign_secretkey($keyPair)),
-		];
+		return 'SSHSIG' . self::sshString(self::Namespace) . self::sshString('') . self::sshString('sha512')
+			. self::sshString(hash('sha512', $message, true));
 	}
 
 
-	/** Line for APP_DEVELOPERS from the line of the key file */
-	public static function publicKeyLine(string $secretKeyLine): string
+	/** Cookie from the output of `ssh-keygen -Y sign -n nette-debug` (armored SSHSIG) */
+	public static function create(int $expiry, string $host, string $armoredSignature): string
 	{
-		[$slug, $secretKey] = self::parseSecretKeyLine($secretKeyLine);
-		return $slug . '@' . base64_encode(sodium_crypto_sign_publickey_from_secretkey($secretKey));
-	}
-
-
-	public static function create(string $secretKeyLine, string $host, int $lifetime, ?int $now = null): string
-	{
-		if ($lifetime < 1 || $lifetime > self::MaxLifetime) {
-			throw new \InvalidArgumentException('Lifetime must be 1 s to ' . self::MaxLifetime . ' s.');
+		$blob = base64_decode((string) preg_replace('~-----[A-Z ]+-----|\s~', '', $armoredSignature), true);
+		$sshsig = $blob !== false && str_starts_with($blob, 'SSHSIG') ? self::readSshStrings(substr($blob, 10), 5) : null;
+		$signature = $sshsig !== null && $sshsig[1] === self::Namespace && $sshsig[3] === 'sha512'
+			? self::readSshStrings($sshsig[4], 2)
+			: null;
+		if ($signature === null || $signature[0] !== 'ssh-ed25519' || strlen($signature[1]) !== SODIUM_CRYPTO_SIGN_BYTES) {
+			throw new \InvalidArgumentException('Expected an ssh-ed25519 signature of ssh-keygen -Y sign -n ' . self::Namespace . '.');
 		}
-		[$slug, $secretKey] = self::parseSecretKeyLine($secretKeyLine);
-		$expiry = ($now ?? time()) + $lifetime;
-		$signature = sodium_crypto_sign_detached(self::message($slug, $expiry, $host), $secretKey);
-		return $slug . '.' . $expiry . '.' . self::base64Url($signature);
+		return $expiry . '.' . self::normalizeHost($host) . '.' . self::base64Url($signature[1]);
 	}
 
 
 	/**
-	 * @param string[] $developers lines of APP_DEVELOPERS, other lines (e.g. the former bcrypt hashes)
+	 * @param string[] $developers lines of APP_DEVELOPERS ("<slug>@ssh-ed25519 <base64>"), other lines
 	 *                             are ignored
 	 */
 	public static function verify(mixed $token, array $developers, string $host, ?int $now = null): bool
 	{
 		if (
 			!is_string($token)
-			|| !preg_match('~^(' . self::SlugPattern . ')\.([0-9]{1,12})\.([A-Za-z0-9_-]{86})$~D', $token, $m)
+			|| !preg_match('~^([0-9]{1,12})\.([a-z0-9.-]{1,253}|\*)\.([A-Za-z0-9_-]{86})$~D', $token, $m)
 		) {
 			return false;
 		}
-		[, $slug, $expiry, $signature] = $m;
+		[, $expiry, $tokenHost, $signature] = $m;
 		$now ??= time();
 		if ((int) $expiry <= $now || (int) $expiry > $now + self::MaxLifetime) {
 			return false;
 		}
+		if ($tokenHost !== self::AnyHost && $tokenHost !== self::normalizeHost($host)) {
+			return false;
+		}
 
+		$encoded = $signature;
+		$signature = (string) base64_decode(strtr($signature, '-_', '+/'));
+		if (self::base64Url($signature) !== $encoded) {
+			// only the canonical encoding - the unused bits of the last character would give the same signature
+			return false;
+		}
+		$signedData = self::signedData(self::message((int) $expiry, $tokenHost));
 		foreach ($developers as $developer) {
-			if (!is_string($developer) || !str_starts_with($developer, $slug . '@')) {
-				continue;
+			$publicKey = is_string($developer) ? self::publicKey($developer) : null;
+			if ($publicKey !== null && sodium_crypto_sign_verify_detached($signature, $signedData, $publicKey)) {
+				return true;
 			}
-			$publicKey = base64_decode(substr($developer, strlen($slug) + 1), true);
-			if ($publicKey === false || strlen($publicKey) !== SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES) {
-				continue;
-			}
-			$signature = base64_decode(strtr($signature, '-_', '+/'), true);
-			return $signature !== false
-				&& strlen($signature) === SODIUM_CRYPTO_SIGN_BYTES
-				&& sodium_crypto_sign_verify_detached($signature, self::message($slug, (int) $expiry, $host), $publicKey);
 		}
 		return false;
 	}
 
 
-	/** Host without the port and the trailing dot, lowercase */
+	/** Host without the port and the trailing dot, lowercase; "*" stays */
 	public static function normalizeHost(string $host): string
 	{
 		return rtrim(strtolower((string) preg_replace('~:[0-9]+$~', '', $host)), '.');
 	}
 
 
-	private static function message(string $slug, int $expiry, string $host): string
+	/** Raw Ed25519 key from "<slug>@ssh-ed25519 <base64> [comment]", null for anything else */
+	private static function publicKey(string $developer): ?string
 	{
-		return "nette-debug\n" . $slug . "\n" . $expiry . "\n" . self::normalizeHost($host);
+		if (!preg_match('~@ssh-ed25519 ([A-Za-z0-9+/]+=*)~', $developer, $m)) {
+			return null;
+		}
+		$key = self::readSshStrings((string) base64_decode($m[1], true), 2);
+		return $key !== null && $key[0] === 'ssh-ed25519' && strlen($key[1]) === SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES
+			? $key[1]
+			: null;
 	}
 
 
-	/** @return array{string, string} */
-	private static function parseSecretKeyLine(string $line): array
+	/** @return list<string>|null the first $count strings of the SSH wire format, null when malformed */
+	private static function readSshStrings(string $data, int $count): ?array
 	{
-		$parts = explode('@', trim($line), 2);
-		$secretKey = base64_decode($parts[1] ?? '', true);
-		if ($secretKey === false || strlen($secretKey) !== SODIUM_CRYPTO_SIGN_SECRETKEYBYTES) {
-			throw new \InvalidArgumentException('Invalid key file, expected "<slug>@<base64 secret key>".');
+		$strings = [];
+		$offset = 0;
+		for ($i = 0; $i < $count; $i++) {
+			if (strlen($data) < $offset + 4) {
+				return null;
+			}
+			$length = unpack('N', $data, $offset)[1];
+			if (strlen($data) < $offset + 4 + $length) {
+				return null;
+			}
+			$strings[] = substr($data, $offset + 4, $length);
+			$offset += 4 + $length;
 		}
-		self::assertSlug($parts[0]);
-		return [$parts[0], $secretKey];
+		return $strings;
 	}
 
 
-	private static function assertSlug(string $slug): void
+	private static function sshString(string $value): string
 	{
-		if (!preg_match('~^' . self::SlugPattern . '$~D', $slug)) {
-			throw new \InvalidArgumentException('Slug may contain only A-Z, a-z, 0-9, _ and -.');
-		}
+		return pack('N', strlen($value)) . $value;
 	}
 
 
