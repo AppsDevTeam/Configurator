@@ -30,7 +30,7 @@
 		}
 	},
 	"require-dev": {
-		"adt/error-logger": "^3.4",
+		"adt/error-logger": "^3.4.1",
 		"phpunit/phpunit": "^11.5 | ^12.0 | ^13.0"
 	},
 	"autoload-dev": {
