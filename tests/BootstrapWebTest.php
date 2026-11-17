@@ -42,6 +42,7 @@ final class BootstrapWebTest extends TestCase
 			'PROJECT_URL=visible-project-url',
 			'DB_PASSWORD=' . $this->secrets['DB_PASSWORD'],
 			'MAILAPI_KEY=' . $this->secrets['MAILAPI_KEY'],
+			'PREPROD_IPS=78.80.93.27, 203.0.113.0/24',
 		]) . "\n");
 		$this->write('config/common.neon', "parameters:\n\tfrom: common\n");
 		$this->write('config/interface/ui.neon', "parameters:\n\tinterface: ui\n");
@@ -130,6 +131,24 @@ final class BootstrapWebTest extends TestCase
 			fn(string $value): bool => str_contains($report, $value),
 		)), $reports);
 		$this->assertSame([], array_filter($leaks), 'secrets in the reports');
+	}
+
+	public function testPreprodOnlyForAllowedIps(): void
+	{
+		$port = $this->startServer(['FIXTURE_ROOT' => $this->root]);
+
+		$denied = $this->request($port, '/', ['X-Forwarded-Port: 4434', 'X-Real-IP: 1.2.3.4'], []);
+		$this->assertStringContainsString(' 403 ', $denied);
+		$this->assertSame([], glob($this->root . '/log/exception--*') ?: [], 'the application must not run');
+
+		// the application runs (and throws the fixture exception): allowed IP, private client, not preprod
+		foreach ([
+			['X-Forwarded-Port: 4434', 'X-Real-IP: 203.0.113.7'],
+			['X-Forwarded-Port: 4434'],
+			['X-Forwarded-Port: 443', 'X-Real-IP: 1.2.3.4'],
+		] as $headers) {
+			$this->assertStringContainsString(' 500 ', $this->request($port, '/', $headers, []), implode(', ', $headers));
+		}
 	}
 
 	/** @param list<string> $markers */

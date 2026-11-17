@@ -60,7 +60,7 @@ class Bootstrap extends \ADT\Bootstrap
 `new \App\Bootstrap()` (root = parent of the directory of the class) then `bootUI()` in
 `www/index.php`, `bootConsole()` in `bin/console` and the test bootstrap. It does:
 
-- `loadEnv()` and `handleMaintenance()` (see below) in the constructor
+- `loadEnv()`, `handlePreprodAccess()` and `handleMaintenance()` (see below) in the constructor
 - debug mode: console `APP_DEBUG`, web `APP_DEBUG` or a developer token (see *Debug mode on servers*);
   error page of production
   `src/error.phtml` of this package (500, AJAX gets just the text), `app/error.phtml` of the project
@@ -114,6 +114,29 @@ MAINTENANCE_BYPASS=
 ```
 
 `Configurator::isMaintenance()` tells whether the maintenance is on.
+
+## Preprod access
+
+Preprod of a deploy (port 4434 of the edge proxy, nginx serves `release/www` by the header
+`X-Forwarded-Port: 4434`) is open only to the IPs of `PREPROD_IPS` in `.env` - comma-separated
+IPs or CIDRs, empty = open to everybody:
+
+```
+PREPROD_IPS=78.80.93.27, 203.0.113.0/24
+```
+
+```php
+$configurator->loadEnv(__DIR__ . '/..');
+$configurator->handlePreprodAccess();
+```
+
+- others get `403` before the application starts (the console is not affected); static files are
+  served by nginx and stay public
+- private and loopback addresses always pass: the smoke check of the deploy (curl on the server,
+  through the docker bridge) and the VPN
+- the client is `X-Real-IP` when the request comes from a private address (the edge proxy,
+  which always overwrites the header), otherwise `REMOTE_ADDR` - with or without `real_ip` of nginx
+- an invalid entry matches nothing, a typo closes preprod instead of opening it
 
 ## Debug mode on servers
 

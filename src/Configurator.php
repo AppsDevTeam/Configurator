@@ -107,6 +107,86 @@ final class Configurator extends \Nette\Bootstrap\Configurator
 
 
 	/**
+	 * Preprod (X-Forwarded-Port 4434 - the same header by which nginx serves release/www instead of
+	 * current/www) only for PREPROD_IPS of .env (comma-separated IPs or CIDRs, empty = open to all)
+	 * and private addresses: the smoke check of the deploy comes from the docker bridge, the VPN
+	 * from a private range. Web 403, the console is not affected. Call after loadEnv().
+	 */
+	public function handlePreprodAccess(): void
+	{
+		if (self::isCli() || self::isPreprodAllowed($_SERVER, (string) ($_ENV['PREPROD_IPS'] ?? ''))) {
+			return;
+		}
+
+		http_response_code(403);
+		header('Cache-Control: no-store');
+		header('Content-Type: text/plain; charset=utf-8');
+		echo "Forbidden\n";
+		exit;
+	}
+
+
+	/**
+	 * @param array<string, mixed> $server
+	 */
+	public static function isPreprodAllowed(array $server, string $allowedIps): bool
+	{
+		if (($server['HTTP_X_FORWARDED_PORT'] ?? null) !== '4434' || trim($allowedIps) === '') {
+			return true;
+		}
+
+		// The edge proxy (nginx-proxy) connects from a private address and always overwrites X-Real-IP
+		// with its client; works with real_ip of nginx on (REMOTE_ADDR is the client already) and off
+		$ip = (string) ($server['REMOTE_ADDR'] ?? '');
+		$realIp = (string) ($server['HTTP_X_REAL_IP'] ?? '');
+		if (self::isPrivateIp($ip) && filter_var($realIp, FILTER_VALIDATE_IP)) {
+			$ip = $realIp;
+		}
+
+		if (self::isPrivateIp($ip)) {
+			return true;
+		}
+		foreach (explode(',', $allowedIps) as $range) {
+			if (self::ipInRange($ip, trim($range))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+
+	private static function isPrivateIp(string $ip): bool
+	{
+		return filter_var($ip, FILTER_VALIDATE_IP) !== false
+			&& filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
+	}
+
+
+	/** $range = IP or CIDR; an invalid one matches nothing (a typo closes preprod, does not open it) */
+	private static function ipInRange(string $ip, string $range): bool
+	{
+		[$subnet, $bits] = explode('/', $range, 2) + [1 => null];
+		if (!filter_var($ip, FILTER_VALIDATE_IP) || !filter_var($subnet, FILTER_VALIDATE_IP)) {
+			return false;
+		}
+		$ipBin = (string) inet_pton($ip);
+		$subnetBin = (string) inet_pton($subnet);
+		$maxBits = strlen($ipBin) * 8;
+		if (strlen($subnetBin) !== strlen($ipBin) || ($bits !== null && (!ctype_digit($bits) || (int) $bits > $maxBits))) {
+			return false;
+		}
+
+		$bits = $bits === null ? $maxBits : (int) $bits;
+		$bytes = intdiv($bits, 8);
+		if (substr($ipBin, 0, $bytes) !== substr($subnetBin, 0, $bytes)) {
+			return false;
+		}
+		$rest = $bits % 8;
+		return $rest === 0 || ((ord($ipBin[$bytes]) ^ ord($subnetBin[$bytes])) & (0xFF << (8 - $rest)) & 0xFF) === 0;
+	}
+
+
+	/**
 	 * @throws Exception
 	 */
 	public function addConfig(string|array|null $config): static
