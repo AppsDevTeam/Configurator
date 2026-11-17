@@ -52,7 +52,7 @@ abstract class Bootstrap
 	 * a few exact names (password, pin ...). A project extends the pattern by overriding it.
 	 */
 	protected string $sensitiveKeys = '~pass|pwd|secret|token|(^|[_-])(api)?key($|[_-])|apikey|salt|dsn'
-		. '|(^|[_-])auth|authorization|developers|cookie|sessid|session|bypass|nette-debug~i';
+		. '|(^|[_-])auth|authorization|developers|cookie|sessid|session|bypass|app-debug~i';
 
 
 	/**
@@ -106,7 +106,7 @@ abstract class Bootstrap
 			};
 		}
 
-		// Locally APP_DEBUG is enough, on servers the cookie nette-debug with a token signed by the SSH key
+		// Locally APP_DEBUG is enough, on servers the cookie app-debug with a token signed by the SSH key
 		// of a developer from APP_DEVELOPERS, from an IP allowed by the proxy - make debug-token of adt/make
 		$this->configurator->setDebugMode($_ENV['APP_DEBUG'] ? true : json_decode($_ENV['APP_DEVELOPERS'] ?? '[]', true));
 		return $this->setupContainer('ui');

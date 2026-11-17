@@ -101,7 +101,7 @@ final class DebugTokenTest extends TestCase
 			exec('ssh-keygen -q -t ed25519 -N "" -C test -f ' . escapeshellarg($dir . '/key'));
 			$expiry = time() + 3600;
 			file_put_contents($dir . '/message', DebugToken::message($expiry, '*'));
-			exec('ssh-keygen -Y sign -n nette-debug -f ' . escapeshellarg($dir . '/key') . ' ' . escapeshellarg($dir . '/message') . ' 2>/dev/null');
+			exec('ssh-keygen -Y sign -n app-debug -f ' . escapeshellarg($dir . '/key') . ' ' . escapeshellarg($dir . '/message') . ' 2>/dev/null');
 
 			$token = DebugToken::create($expiry, '*', (string) file_get_contents($dir . '/message.sig'));
 			$developer = 'Test@' . trim((string) file_get_contents($dir . '/key.pub'));
@@ -120,7 +120,7 @@ final class DebugTokenTest extends TestCase
 	private function token(int $expiry, string $host): string
 	{
 		$signature = sodium_crypto_sign_detached(DebugToken::signedData(DebugToken::message($expiry, $host)), $this->secretKey);
-		$sshsig = 'SSHSIG' . pack('N', 1) . self::str('key') . self::str('nette-debug') . self::str('') . self::str('sha512')
+		$sshsig = 'SSHSIG' . pack('N', 1) . self::str('key') . self::str('app-debug') . self::str('') . self::str('sha512')
 			. self::str(self::str('ssh-ed25519') . self::str($signature));
 		return DebugToken::create($expiry, $host, "-----BEGIN SSH SIGNATURE-----\n" . chunk_split(base64_encode($sshsig), 70) . "-----END SSH SIGNATURE-----\n");
 	}

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace ADT;
 
 /**
- * Developer cookie of the debug mode (nette-debug): "<expiry>.<host>.<signature>", a signature of the
+ * Developer cookie of the debug mode (app-debug): "<expiry>.<host>.<signature>", a signature of the
  * expiry and the host ("*" = every host) by the SSH key (ssh-ed25519) of a developer, made by
- * `ssh-keygen -Y sign -n nette-debug` (SSHSIG). Servers know only the public SSH keys (APP_DEVELOPERS,
+ * `ssh-keygen -Y sign -n app-debug` (SSHSIG). Servers know only the public SSH keys (APP_DEVELOPERS,
  * "<slug>@ssh-ed25519 <base64>"), nothing secret is deployed, and a leaked cookie stops working when
- * it expires. On top of that ADT\Configurator requires the header X-Nette-Debug-Allowed: 1 of the
+ * it expires. On top of that ADT\Configurator requires the header X-App-Debug-Allowed: 1 of the
  * edge proxy, which sends it only to the IPs allowed on the server.
  *
  * No dependencies: bin/debug-token requires this file directly (make debug-token of adt/make runs it
@@ -17,7 +17,10 @@ namespace ADT;
  */
 final class DebugToken
 {
-	public const Namespace = 'nette-debug';
+	public const CookieName = 'app-debug';
+
+	/** Namespace of the SSH signature (ssh-keygen -Y sign -n) */
+	public const Namespace = 'app-debug';
 
 	/** Longest lifetime of a token a server accepts, counted from the moment of the request */
 	public const MaxLifetime = 366 * 24 * 3600;
@@ -43,7 +46,7 @@ final class DebugToken
 	}
 
 
-	/** Cookie from the output of `ssh-keygen -Y sign -n nette-debug` (armored SSHSIG) */
+	/** Cookie from the output of `ssh-keygen -Y sign -n app-debug` (armored SSHSIG) */
 	public static function create(int $expiry, string $host, string $armoredSignature): string
 	{
 		$blob = base64_decode((string) preg_replace('~-----[A-Z ]+-----|\s~', '', $armoredSignature), true);

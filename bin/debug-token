@@ -4,7 +4,7 @@
 // Cookie of the debug mode (ADT\DebugToken), run by `make debug-token` of adt/make in a throwaway
 // container without network; the signature itself is made on the host by ssh-keygen and ssh-agent.
 //   debug-token message <expiry> <host>          prints the text to sign
-//   debug-token token <expiry> <host> < sshsig   prints the cookie nette-debug
+//   debug-token token <expiry> <host> < sshsig   prints the cookie app-debug
 
 declare(strict_types=1);
 
@@ -23,7 +23,7 @@ try {
 		case 'token':
 			$token = DebugToken::create($expiry, $host, (string) stream_get_contents(STDIN));
 			$where = $host === DebugToken::AnyHost ? 'všechny domény' : $host;
-			echo "Cookie nette-debug pro $where, platí do ", date('j. n. Y H:i e', $expiry), ":\n\n$token\n";
+			echo "Cookie app-debug pro $where, platí do ", date('j. n. Y H:i e', $expiry), ":\n\n$token\n";
 			break;
 
 		default:

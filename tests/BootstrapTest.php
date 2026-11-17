@@ -155,7 +155,7 @@ final class BootstrapTest extends TestCase
 		];
 		$_ENV = $secrets + $_ENV + ['PROJECT_URL' => 'visible-project-url'];
 		$_SERVER = $secrets + $_SERVER;
-		$_COOKIE = ['PHPSESSID' => $secret('session-id'), 'nette-debug' => $secret('developer-key')];
+		$_COOKIE = ['PHPSESSID' => $secret('session-id'), 'app-debug' => $secret('developer-key')];
 
 		(new \FixtureApp\Bootstrap($this->root))->bootConsole();
 		$file = $this->root . '/log/exception.html';

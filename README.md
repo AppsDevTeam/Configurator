@@ -69,7 +69,7 @@ class Bootstrap extends \ADT\Bootstrap
   e-mails only in production), `temp/`, parameters `rootDir`, `appDir`, `wwwDir`
 - secrets hidden in the Tracy log (HTML and `.md`, the attachments of ErrorLogger e-mails) and on the
   BlueScreen: a scrubber hides every key matching `$sensitiveKeys` (`*PASS*`, `*SECRET*`, `*TOKEN*`,
-  `*_KEY*`, `*SALT*`, `*DSN*`, `*AUTH*`, `APP_DEVELOPERS`, cookies and the session ID, `nette-debug`,
+  `*_KEY*`, `*SALT*`, `*DSN*`, `*AUTH*`, `APP_DEVELOPERS`, cookies and the session ID, `app-debug`,
   `MAINTENANCE_BYPASS` ...) - `$_ENV` and `$_SERVER` carry the whole `.env` of the container. A project
   extends the pattern by overriding the property; a scrubber set by the project before is kept
 - configs `common`, `interface/<ui|console>`, `stage/<STAGE>`, `APP_ENV` (comma-separated),
@@ -116,10 +116,10 @@ The developer's own SSH key (ssh-ed25519) turns the debug mode on - nothing else
 
 - `APP_DEVELOPERS` (`config/project/.env.common`) is a JSON list of `"<Slug>@ssh-ed25519 <base64>"`, the
   public SSH keys of the developers - nothing secret.
-- The cookie `nette-debug` carries a token: an expiry (at most 366 days) and a host (`*` = every host)
-  signed by the SSH key through ssh-agent (`ssh-keygen -Y sign -n nette-debug`, `ADT\DebugToken`). The
+- The cookie `app-debug` carries a token: an expiry (at most 366 days) and a host (`*` = every host)
+  signed by the SSH key through ssh-agent (`ssh-keygen -Y sign -n app-debug`, `ADT\DebugToken`). The
   private key never leaves the developer's machine and never goes into a cookie.
-- The server turns the debug mode on only with the header `X-Nette-Debug-Allowed: 1`, which the edge
+- The server turns the debug mode on only with the header `X-App-Debug-Allowed: 1`, which the edge
   proxy (nginx-proxy of server-management-scripts) sends only to the IPs in `NGINX_PROXY_DEBUG_IPS` and
   always overwrites. Without the proxy (locally, directly) the cookie does nothing; locally `APP_DEBUG=1`.
 
