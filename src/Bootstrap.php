@@ -118,8 +118,11 @@ abstract class Bootstrap
 		$this->configurator->enableTracy($this->rootDir . '/log');
 		$blueScreen = Debugger::getBlueScreen();
 		$projectScrubber = $blueScreen->scrubber;
+		// Every cookie, not only the ones named by $sensitiveKeys: any of them can carry a login
+		// (remember-me, a token of a third party ...); the scrubber gets the key only, not the array
 		$blueScreen->scrubber = fn(string $key, mixed $value, ?string $class): bool
 			=> (bool) preg_match($this->sensitiveKeys, $key)
+				|| (isset($_COOKIE[$key]) && $_COOKIE[$key] === $value)
 				|| ($projectScrubber !== null && $projectScrubber($key, $value, $class));
 		if (!$this->strictDeprecations) {
 			Debugger::$strictMode = E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED;

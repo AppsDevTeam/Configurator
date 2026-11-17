@@ -70,8 +70,13 @@ class Bootstrap extends \ADT\Bootstrap
 - secrets hidden in the Tracy log (HTML and `.md`, the attachments of ErrorLogger e-mails) and on the
   BlueScreen: a scrubber hides every key matching `$sensitiveKeys` (`*PASS*`, `*SECRET*`, `*TOKEN*`,
   `*_KEY*`, `*SALT*`, `*DSN*`, `*AUTH*`, `APP_DEVELOPERS`, cookies and the session ID, `app-debug`,
-  `MAINTENANCE_BYPASS` ...) - `$_ENV` and `$_SERVER` carry the whole `.env` of the container. A project
-  extends the pattern by overriding the property; a scrubber set by the project before is kept
+  `MAINTENANCE_BYPASS` ...) - `$_ENV` and `$_SERVER` carry the whole `.env` of the container - and the
+  value of every cookie, whatever its name (remember-me and similar logins). A project extends the
+  pattern by overriding the property; a scrubber set by the project before is kept. Not covered:
+  the `.md` report of plain Tracy prints request headers and unnamed call arguments raw (scrubbed only
+  by ErrorLogger ≥ 3.4, which writes its own), and the URL (report title, `REQUEST_URI`,
+  `QUERY_STRING`, the line of `exception.log`) keeps secrets of the query string
+  (`tests/BootstrapWebTest.php`)
 - configs `common`, `interface/<ui|console>`, `stage/<STAGE>`, `APP_ENV` (comma-separated),
   tenant configs, `addConfigs()`, `test` (`APP_TEST` in `.env` or env)
 - tenants (several projects in one code base): `APP_ENV=project/<name>` (`config/project/<name>.neon`)
