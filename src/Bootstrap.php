@@ -148,6 +148,12 @@ abstract class Bootstrap
 		// APP_TEST comes from $_ENV (.env, CLI) or getenv() (www/index.php sets it by putenv as well)
 		$isTest = $_ENV['APP_TEST'] || getenv('APP_TEST');
 
+		// Before setConfigDirectory(): addConfig() resolves names against it, this one is an absolute path.
+		// Only with the http extension (nette/http) - its section would not compile without it.
+		if (isset($this->configurator->defaultExtensions['http']) && class_exists(\Nette\Bridges\HttpDI\HttpExtension::class)) {
+			$this->configurator->setConfigDirectory('')->addConfig(__DIR__ . '/defaults.neon');
+		}
+
 		$this->configurator
 			->setConfigDirectory($this->rootDir . '/config')
 			->addConfig('common')

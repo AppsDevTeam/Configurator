@@ -61,6 +61,9 @@ class Bootstrap extends \ADT\Bootstrap
 `www/index.php`, `bootConsole()` in `bin/console` and the test bootstrap. It does:
 
 - `loadEnv()`, `handlePreprodAccess()` and `handleMaintenance()` (see below) in the constructor
+- `src/defaults.neon` of the package before `config/common.neon` (with nette/http only): no `X-Powered-By`,
+  CSP `object-src 'none'`, `base-uri 'none'`, `frame-ancestors 'self'` - the project overrides them in
+  `common.neon`, `script-src` stays in the project (it depends on its templates)
 - debug mode: console `APP_DEBUG`, web `APP_DEBUG` or a developer token (see *Debug mode on servers*);
   error page of production
   `src/error.phtml` of this package (500, AJAX gets just the text), `app/error.phtml` of the project

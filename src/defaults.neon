@@ -1,0 +1,12 @@
+# Defaults of every web of ADT\Bootstrap, loaded before config/common.neon of the project, which
+# overrides them. Only what is safe everywhere - script-src of the CSP depends on the templates of
+# the project (inline scripts, nonce), so it stays in the project.
+http:
+	headers:
+		# The version of the framework is not a vulnerability, but it tells an attacker which exploits
+		# to try (WSTG-INFO-02); PHP sends its own header too, expose_php=0 is needed as well
+		X-Powered-By: null
+	csp:
+		object-src: none
+		base-uri: none
+		frame-ancestors: self
