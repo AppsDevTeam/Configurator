@@ -31,7 +31,11 @@ abstract class Bootstrap
 	/** Root of the project (the directory with .env, app/, config/) */
 	protected string $rootDir;
 
-	/** Recipient of the errors of production (adt/error-logger, when installed); null = no ErrorLogger */
+	/**
+	 * Recipient of the errors of production (adt/error-logger, when installed); null = no ErrorLogger.
+	 * ERROR_EMAIL of .env overrides it per stage, empty = errors only in log/, no e-mails (CI runs in
+	 * production mode, its log/ is an artifact of the job).
+	 */
 	protected ?string $errorEmail = 'error@mail.appsdevteam.com';
 
 	/**
@@ -131,8 +135,10 @@ abstract class Bootstrap
 		}
 
 		if ($this->errorEmail !== null && class_exists(ErrorLogger::class)) {
-			$logger = ErrorLogger::install($this->errorEmail);
-			if (!Debugger::$productionMode) {
+			// Configurator turns an empty value of .env into null
+			$errorEmail = array_key_exists('ERROR_EMAIL', $_ENV) ? (string) $_ENV['ERROR_EMAIL'] : $this->errorEmail;
+			$logger = ErrorLogger::install($errorEmail);
+			if (!Debugger::$productionMode || $errorEmail === '') {
 				// no e-mails outside production
 				$logger->mailer = null;
 			}

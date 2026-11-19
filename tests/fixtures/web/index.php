@@ -15,7 +15,8 @@ require $root . '/app/Bootstrap.php';
 (new \FixtureApp\Bootstrap($root))->bootUI();
 
 $logger = \Tracy\Debugger::getLogger();
-if ($logger instanceof \ADT\ErrorLogger) {
+// Only where Bootstrap left the mailer on (production, ERROR_EMAIL not empty)
+if ($logger instanceof \ADT\ErrorLogger && $logger->mailer !== null) {
 	$logger->mailer = function ($message, string $email, ?string $exceptionFile, ?string $exceptionMdFile) use ($root): void {
 		file_put_contents($root . '/log/mail.txt', implode("\n", [
 			(string) $message,

@@ -69,7 +69,7 @@ class Bootstrap extends \ADT\Bootstrap
   `src/error.phtml` of this package (500, AJAX gets just the text), `app/error.phtml` of the project
   replaces it
 - Tracy (`log/`), `ADT\ErrorLogger` when adt/error-logger is installed (`$errorEmail`, null = off,
-  e-mails only in production), `temp/`, parameters `rootDir`, `appDir`, `wwwDir`
+  e-mails only in production; `ERROR_EMAIL` of `.env` overrides the recipient per stage, empty = no e-mails, e.g. CI), `temp/`, parameters `rootDir`, `appDir`, `wwwDir`
 - secrets hidden in the Tracy log (HTML and `.md`, the attachments of ErrorLogger e-mails) and on the
   BlueScreen: a scrubber hides every key matching `$sensitiveKeys` (`*PASS*`, `*SECRET*`, `*TOKEN*`,
   `*_KEY*`, `*SALT*`, `*DSN*`, `*AUTH*`, `APP_DEVELOPERS`, cookies and the session ID, `app-debug`,

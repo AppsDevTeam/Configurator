@@ -133,6 +133,16 @@ final class BootstrapWebTest extends TestCase
 		$this->assertSame([], array_filter($leaks), 'secrets in the reports');
 	}
 
+	public function testEmptyErrorEmailLogsWithoutMail(): void
+	{
+		file_put_contents($this->root . '/.env', "ERROR_EMAIL=\n", FILE_APPEND);
+		$port = $this->startServer(['FIXTURE_ROOT' => $this->root, 'FIXTURE_ERROR_LOGGER' => '1']);
+
+		$this->assertStringContainsString(' 500 ', $this->request($port, '/', [], []));
+		$this->assertStringContainsString('fixture-exception', $this->readLog('exception--*.html'));
+		$this->assertFileDoesNotExist($this->root . '/log/mail.txt');
+	}
+
 	public function testPreprodOnlyForAllowedIps(): void
 	{
 		$port = $this->startServer(['FIXTURE_ROOT' => $this->root]);
